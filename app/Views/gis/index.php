@@ -1654,6 +1654,12 @@
                 <input type="hidden" id="gis-modal-lat" value="">
                 <input type="hidden" id="gis-modal-lng" value="">
                 <div class="row g-3">
+                    <div class="col-md-12">
+                        <label class="form-label fw-semibold" for="gis-modal-section-select">Section Jaringan <span class="text-danger">*</span></label>
+                        <select id="gis-modal-section-select" class="form-select" required>
+                            <option value="">-- Pilih Section --</option>
+                        </select>
+                    </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">Jenis Temuan <span class="text-danger">*</span></label>
                         <select id="gis-modal-jenis" class="form-select" required>
@@ -1668,10 +1674,12 @@
                         <select id="gis-modal-pelaksana" class="form-select" required>
                             <option value="">-- Pilih --</option>
                             <option value="PDKB">PDKB</option>
+                            <option value="HAR GARDU">HAR GARDU</option>
                             <option value="HAR GTT">HAR GTT</option>
                             <option value="HAR KONSTRUKSI">HAR KONSTRUKSI</option>
                             <option value="HAR ROW">HAR ROW</option>
                             <option value="HAR CRANE">HAR CRANE</option>
+                            <option value="YANTEK">YANTEK</option>
                         </select>
                     </div>
                     <div class="col-md-4">
@@ -4359,6 +4367,22 @@ document.addEventListener("DOMContentLoaded", function () {
         currentWorkingSectionId = null;
         currentWorkingConstructionId = null;
         currentAssetAuthoritativePenyulangId = null;
+        window._gisCurrentAssetContext = {
+            asset_id:       assetId,
+            nama_asset:     (fallbackProps && fallbackProps.nama_asset) ? fallbackProps.nama_asset : '',
+            kode_asset:     (fallbackProps && fallbackProps.kode_asset) ? fallbackProps.kode_asset : '',
+            jenis_asset:    (fallbackProps && fallbackProps.jenis_asset) ? fallbackProps.jenis_asset : '',
+            ulp_id:         (fallbackProps && fallbackProps.ulp_id) ? fallbackProps.ulp_id : (setupUlpSelect ? setupUlpSelect.value : ''),
+            nama_ulp:       (fallbackProps && fallbackProps.nama_ulp) ? fallbackProps.nama_ulp : '',
+            penyulang_id:   (fallbackProps && fallbackProps.penyulang_id) ? fallbackProps.penyulang_id : (currentFeederId || ''),
+            nama_penyulang: (fallbackProps && fallbackProps.nama_penyulang) ? fallbackProps.nama_penyulang : '',
+            section_id:     (fallbackProps && fallbackProps.section_id) ? fallbackProps.section_id : '',
+            nama_section:   (fallbackProps && fallbackProps.nama_section) ? fallbackProps.nama_section : '',
+            authoritative_section_locked: Boolean(fallbackProps && fallbackProps.section_id),
+            lat:            (fallbackProps && fallbackProps.latitude !== undefined && fallbackProps.latitude !== null) ? fallbackProps.latitude : ((coords && coords[0]) ? coords[0] : ''),
+            lng:            (fallbackProps && fallbackProps.longitude !== undefined && fallbackProps.longitude !== null) ? fallbackProps.longitude : ((coords && coords[1]) ? coords[1] : ''),
+            alamat:         (fallbackProps && fallbackProps.lokasi) ? fallbackProps.lokasi : '',
+        };
 
         // Reset UI selector containers
         $('#ctx-section-selector-container').hide();
@@ -4559,10 +4583,14 @@ document.addEventListener("DOMContentLoaded", function () {
                     nama_penyulang: penyulangBlock.nama_penyulang || '',
                     section_id:    sectionBlock.id     || '',
                     nama_section:  sectionBlock.nama_section || '',
+                    authoritative_section_locked: Boolean(sectionBlock.id && sectionBlock.source === 'SYSTEM'),
                     lat:           res.asset ? res.asset.latitude  : '',
                     lng:           res.asset ? res.asset.longitude : '',
                     alamat:        res.asset ? res.asset.lokasi    : '',
                 };
+                if (typeof window._syncGisQuickModalFromContext === 'function') {
+                    window._syncGisQuickModalFromContext(window._gisCurrentAssetContext);
+                }
 
                 // Update "Form Lengkap" link inside modal
                 const fullFormLink = document.getElementById('gis-modal-full-form-link');
@@ -9891,26 +9919,149 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         });
     }
+    function updateGisModalBannerNetwork(ctx) {
+        const secSelect = document.getElementById('gis-modal-section-select');
+        let secName = (ctx && ctx.nama_section && ctx.nama_section !== 'Section Tidak Terpetakan') ? ctx.nama_section : '';
+        if (secSelect && secSelect.selectedIndex > 0 && secSelect.options[secSelect.selectedIndex]) {
+            secName = secSelect.options[secSelect.selectedIndex].textContent;
+        }
+        const parts = [ctx ? ctx.nama_ulp : '', ctx ? ctx.nama_penyulang : '', secName].filter(Boolean);
+        const netEl = document.getElementById('gis-modal-asset-network');
+        if (netEl) {
+            netEl.textContent = parts.join(' › ');
+        }
+    }
+
+    const cachedSectionsByFeeder = {};
+
+    function populateGisModalSectionOptions(ctx) {
+        const secSelect = document.getElementById('gis-modal-section-select');
+        const secHidden = document.getElementById('gis-modal-section-id');
+        if (!secSelect || !secHidden) return;
+
+        const penyulangId = (ctx && ctx.penyulang_id) ? String(ctx.penyulang_id) : String(secHidden.getAttribute('data-penyulang-id') || '');
+        const preferredSecId = (ctx && ctx.section_id) ? String(ctx.section_id) : String(secHidden.value || '');
+        const lockedByAsset = Boolean(ctx && ctx.authoritative_section_locked && ctx.section_id);
+        const hintLokasi = String((ctx && ctx.alamat) || '');
+
+        const applySections = function(sections) {
+            secSelect.innerHTML = '<option value="">-- Pilih Section --</option>';
+            (sections || []).forEach(function(s) {
+                const opt = document.createElement('option');
+                opt.value = String(s.id);
+                opt.textContent = s.nama_section || ('Section #' + s.id);
+                secSelect.appendChild(opt);
+            });
+
+            let resolvedId = '';
+            if (preferredSecId && (sections || []).some(function(s) { return String(s.id) === preferredSecId; })) {
+                resolvedId = preferredSecId;
+            } else if (preferredSecId) {
+                const fallbackOpt = document.createElement('option');
+                fallbackOpt.value = preferredSecId;
+                fallbackOpt.textContent = (ctx && ctx.nama_section && ctx.nama_section !== 'Section Tidak Terpetakan') ? ctx.nama_section : ('Section #' + preferredSecId);
+                secSelect.appendChild(fallbackOpt);
+                resolvedId = preferredSecId;
+            } else if (Array.isArray(sections) && sections.length > 0) {
+                const m = hintLokasi.match(/section\s*(\d+)/i);
+                const idx = m ? Math.max(0, Math.min(sections.length - 1, parseInt(m[1], 10) - 1)) : 0;
+                resolvedId = String(sections[idx].id);
+            }
+
+            secSelect.value = resolvedId;
+            secHidden.value = resolvedId;
+            secSelect.disabled = lockedByAsset;
+            if (ctx) {
+                ctx.section_id = resolvedId;
+                updateGisModalBannerNetwork(ctx);
+            }
+        };
+
+        if (!penyulangId) {
+            applySections([]);
+            return;
+        }
+
+        if (cachedSectionsByFeeder && Array.isArray(cachedSectionsByFeeder[penyulangId]) && cachedSectionsByFeeder[penyulangId].length > 0) {
+            applySections(cachedSectionsByFeeder[penyulangId]);
+            return;
+        }
+
+        fetch('<?= site_url('ajax/network/section') ?>/' + encodeURIComponent(penyulangId), {
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(list) {
+            const arr = Array.isArray(list) ? list : (list && Array.isArray(list.data) ? list.data : []);
+            if (cachedSectionsByFeeder) {
+                cachedSectionsByFeeder[penyulangId] = arr;
+            }
+            applySections(arr);
+        })
+        .catch(function() {
+            applySections([]);
+        });
+    }
+
+    const secSelectEl = document.getElementById('gis-modal-section-select');
+    if (secSelectEl) {
+        secSelectEl.addEventListener('change', function() {
+            const secHidden = document.getElementById('gis-modal-section-id');
+            if (secHidden) {
+                secHidden.value = this.value;
+            }
+            if (window._gisCurrentAssetContext) {
+                window._gisCurrentAssetContext.section_id = this.value;
+                updateGisModalBannerNetwork(window._gisCurrentAssetContext);
+            }
+        });
+    }
+
+    function syncGisQuickModalFromContext(ctx) {
+        if (!ctx) return;
+        const assetId = ctx.asset_id || (typeof currentAssetContextId !== 'undefined' ? currentAssetContextId : '') || '';
+        document.getElementById('gis-modal-asset-banner').className = 'alert alert-success py-2 px-3 mb-3 d-flex align-items-center gap-2';
+        document.getElementById('gis-modal-asset-id').value = assetId;
+        document.getElementById('gis-modal-ulp-id').value = ctx.ulp_id || '';
+        document.getElementById('gis-modal-penyulang-id').value = ctx.penyulang_id || '';
+        if (ctx.section_id) {
+            document.getElementById('gis-modal-section-id').value = ctx.section_id;
+        }
+        document.getElementById('gis-modal-lat').value = (ctx.lat !== undefined && ctx.lat !== null) ? ctx.lat : '';
+        document.getElementById('gis-modal-lng').value = (ctx.lng !== undefined && ctx.lng !== null) ? ctx.lng : '';
+        document.getElementById('gis-modal-asset-name').textContent = ctx.nama_asset || ('Aset #' + assetId);
+        updateGisModalBannerNetwork(ctx);
+        const alamatInput = document.getElementById('gis-modal-alamat');
+        if (ctx.alamat && (!alamatInput.value || alamatInput.dataset.autoFilled === '1')) {
+            alamatInput.value = ctx.alamat;
+            alamatInput.dataset.autoFilled = '1';
+        }
+        populateGisModalSectionOptions(ctx);
+    }
+    window._syncGisQuickModalFromContext = syncGisQuickModalFromContext;
+
     document.getElementById('modal-gis-quick-temuan').addEventListener('show.bs.modal', function() {
         const today = new Date().toISOString().substring(0, 10);
         const tanggalInput = document.getElementById('gis-modal-tanggal');
         if (tanggalInput && !tanggalInput.value) {
             tanggalInput.value = today;
         }
+        const submitBtn = document.getElementById('btn-gis-modal-submit');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.dataset.submitting = '0';
+            submitBtn.innerHTML = '<i class="fas fa-save me-1"></i> Simpan Temuan';
+        }
 
         // Pre-populate asset context from global state (set by fetchAssetContextWithWorking)
-        const assetId = (typeof currentAssetContextId !== 'undefined') ? currentAssetContextId : null;
+        const ctxObj = (typeof window._gisCurrentAssetContext !== 'undefined' && window._gisCurrentAssetContext) ? window._gisCurrentAssetContext : null;
+        const assetId = (ctxObj && ctxObj.asset_id) ? ctxObj.asset_id : ((typeof currentAssetContextId !== 'undefined') ? currentAssetContextId : null);
         if (!assetId) {
             document.getElementById('gis-modal-asset-banner').className = 'alert alert-warning py-2 px-3 mb-3 d-flex align-items-center gap-2';
             document.getElementById('gis-modal-asset-name').textContent = 'Tidak ada aset dipilih';
             document.getElementById('gis-modal-asset-network').textContent = 'Pilih aset di peta terlebih dahulu';
             document.getElementById('gis-modal-asset-id').value = '';
         }
-
-        // Populate from context drawer data attributes
-        const ctxDrawerHeader = document.getElementById('ctx-drawer-asset-name') || document.getElementById('ctx-drawer-header-name');
-        const assetNameEl = document.getElementById('ctx-drawer-asset-name');
-        const assetNetworkEl = document.getElementById('ctx-drawer-network-text');
 
         if (assetId) {
             document.getElementById('gis-modal-asset-id').value = assetId;
@@ -9958,23 +10109,43 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        // Read ULP/Penyulang/Section from stored context
-        if (typeof window._gisCurrentAssetContext !== 'undefined' && window._gisCurrentAssetContext) {
-            const ctx = window._gisCurrentAssetContext;
-            document.getElementById('gis-modal-asset-id').value = ctx.asset_id || assetId || '';
-            document.getElementById('gis-modal-ulp-id').value = ctx.ulp_id || '';
-            document.getElementById('gis-modal-penyulang-id').value = ctx.penyulang_id || '';
-            document.getElementById('gis-modal-section-id').value = ctx.section_id || '';
-            document.getElementById('gis-modal-lat').value = ctx.lat || '';
-            document.getElementById('gis-modal-lng').value = ctx.lng || '';
-            document.getElementById('gis-modal-asset-name').textContent = ctx.nama_asset || ('Aset #' + assetId);
-            const networkText = [ctx.nama_ulp, ctx.nama_penyulang, ctx.nama_section].filter(Boolean).join(' › ');
-            document.getElementById('gis-modal-asset-network').textContent = networkText || '';
-            if (ctx.alamat) {
-                document.getElementById('gis-modal-alamat').value = ctx.alamat;
-            }
+        // Read ULP/Penyulang/Section from stored context or fetch on demand
+        if (ctxObj) {
+            syncGisQuickModalFromContext(ctxObj);
         } else if (assetId) {
             document.getElementById('gis-modal-asset-name').textContent = 'Aset #' + assetId;
+        }
+
+        if (assetId && (!ctxObj || String(ctxObj.asset_id) !== String(assetId) || !ctxObj.ulp_id || !ctxObj.penyulang_id)) {
+            fetch('<?= site_url('ajax/network/asset-context') ?>/' + encodeURIComponent(assetId), {
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(res) {
+                if (res && res.asset) {
+                    const uBlk = (res.network && res.network.ulp) ? res.network.ulp : {};
+                    const pBlk = (res.network && res.network.penyulang) ? res.network.penyulang : {};
+                    const sBlk = (res.network && res.network.section) ? res.network.section : {};
+                    window._gisCurrentAssetContext = {
+                        asset_id: assetId,
+                        nama_asset: res.asset.nama_asset || '',
+                        kode_asset: res.asset.kode_asset || '',
+                        jenis_asset: res.asset.jenis_asset || '',
+                        ulp_id: uBlk.id || '',
+                        nama_ulp: uBlk.nama_ulp || '',
+                        penyulang_id: pBlk.id || '',
+                        nama_penyulang: pBlk.nama_penyulang || '',
+                        section_id: sBlk.id || '',
+                        nama_section: sBlk.nama_section || '',
+                        authoritative_section_locked: Boolean(sBlk.id && sBlk.source === 'SYSTEM'),
+                        lat: res.asset.latitude || '',
+                        lng: res.asset.longitude || '',
+                        alamat: res.asset.lokasi || '',
+                    };
+                    syncGisQuickModalFromContext(window._gisCurrentAssetContext);
+                }
+            })
+            .catch(function() {});
         }
 
         // Clear alert
@@ -10004,23 +10175,27 @@ document.addEventListener("DOMContentLoaded", function () {
     // AJAX Submission
     document.getElementById('btn-gis-modal-submit').addEventListener('click', function() {
         const btn = this;
+        if (btn.disabled || btn.dataset.submitting === '1') {
+            return;
+        }
         const alertEl = document.getElementById('gis-modal-alert');
 
         // Collect values
-        const assetId    = document.getElementById('gis-modal-asset-id').value.trim();
-        const ulpId      = document.getElementById('gis-modal-ulp-id').value.trim();
+        const assetId     = document.getElementById('gis-modal-asset-id').value.trim();
+        const ulpId       = document.getElementById('gis-modal-ulp-id').value.trim();
         const penyulangId = document.getElementById('gis-modal-penyulang-id').value.trim();
-        const sectionId  = document.getElementById('gis-modal-section-id').value.trim();
-        const jenis      = document.getElementById('gis-modal-jenis').value;
-        const pelaksana  = document.getElementById('gis-modal-pelaksana').value;
-        const prioritas  = document.getElementById('gis-modal-prioritas').value;
-        const potensi    = document.getElementById('gis-modal-potensi').value;
-        const konduktor  = document.getElementById('gis-modal-konduktor').value.trim();
-        const tanggal    = document.getElementById('gis-modal-tanggal').value;
-        const alamat     = document.getElementById('gis-modal-alamat').value.trim();
-        const detail     = document.getElementById('gis-modal-detail').value.trim();
-        const lat        = document.getElementById('gis-modal-lat').value;
-        const lng        = document.getElementById('gis-modal-lng').value;
+        const secSelect   = document.getElementById('gis-modal-section-select');
+        const sectionId   = document.getElementById('gis-modal-section-id').value.trim() || (secSelect ? secSelect.value.trim() : '');
+        const jenis       = document.getElementById('gis-modal-jenis').value;
+        const pelaksana   = document.getElementById('gis-modal-pelaksana').value;
+        const prioritas   = document.getElementById('gis-modal-prioritas').value;
+        const potensi     = document.getElementById('gis-modal-potensi').value;
+        const konduktor   = document.getElementById('gis-modal-konduktor').value.trim();
+        const tanggal     = document.getElementById('gis-modal-tanggal').value;
+        const alamat      = document.getElementById('gis-modal-alamat').value.trim();
+        const detail      = document.getElementById('gis-modal-detail').value.trim();
+        const lat         = document.getElementById('gis-modal-lat').value;
+        const lng         = document.getElementById('gis-modal-lng').value;
 
         // Validate required
         const missing = [];
@@ -10039,12 +10214,20 @@ document.addEventListener("DOMContentLoaded", function () {
         if (missing.length > 0) {
             alertEl.className = 'alert alert-warning mt-3';
             alertEl.textContent = 'Lengkapi field berikut: ' + missing.join(', ');
+            alertEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             return;
+        }
+
+        // Resolve live CSRF token from cookie (fallback to rendered hash)
+        let csrfVal = '<?= csrf_hash() ?>';
+        const csrfCookieMatch = document.cookie.match(/(?:^|;\s*)<?= preg_quote(config('Security')->cookieName ?? 'csrf_cookie_name', '/') ?>=([^;]+)/);
+        if (csrfCookieMatch && csrfCookieMatch[1]) {
+            csrfVal = decodeURIComponent(csrfCookieMatch[1]);
         }
 
         // Build FormData
         const fd = new FormData();
-        fd.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+        fd.append('<?= csrf_token() ?>', csrfVal);
         fd.append('ajax', '1');
         fd.append('from', 'gis_inspection');
         fd.append('return_to', 'gis');
@@ -10053,6 +10236,8 @@ document.addEventListener("DOMContentLoaded", function () {
         fd.append('context_penyulang_id', penyulangId);
         fd.append('context_lat', lat);
         fd.append('context_lng', lng);
+        fd.append('latitude', lat);
+        fd.append('longitude', lng);
         fd.append('context_zoom', map ? String(map.getZoom()) : '18');
         fd.append('context_layers', typeof getSelectedSetupLayers === 'function' ? getSelectedSetupLayers().join(',') : '');
         fd.append('ulp_id', ulpId);
@@ -10077,24 +10262,52 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         btn.disabled = true;
+        btn.dataset.submitting = '1';
         btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Menyimpan...';
         alertEl.className = 'alert d-none mt-3';
+        let isRedirectingAfterSave = false;
 
         fetch('<?= site_url('temuan/store') ?>', {
             method: 'POST',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfVal
+            },
             body: fd
         })
-        .then(function(r) {
-            return r.json();
+        .then(async function(r) {
+            const responseText = await r.text();
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (parseError) {
+                if (r.redirected || r.status === 401) {
+                    throw new Error('Sesi login berakhir. Silakan masuk kembali lalu ulangi penyimpanan.');
+                }
+                if (r.status === 403) {
+                    throw new Error('Akses ditolak atau token keamanan (CSRF) tidak valid (HTTP 403).');
+                }
+                throw new Error('Server memberi respons tidak valid (HTTP ' + r.status + ').');
+            }
+            if (!r.ok && data.success !== false) {
+                throw new Error(data.message || 'Gagal menyimpan temuan (HTTP ' + r.status + ').');
+            }
+            return data;
         })
         .then(function(data) {
             if (data.success) {
+                window._lastSavedQuickTemuan = data;
                 // Close modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('modal-gis-quick-temuan'));
-                if (modal) modal.hide();
+                const modalEl = document.getElementById('modal-gis-quick-temuan');
+                const modal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+                if (modal) {
+                    modal._isTransitioning = false;
+                    modal.hide();
+                }
 
-                if (data.redirect_url) {
+                if (data.redirect_url && !window._gisStayOnMapAfterQuickSubmit) {
+                    isRedirectingAfterSave = true;
                     window.location.href = data.redirect_url;
                     return;
                 }
@@ -10132,17 +10345,29 @@ document.addEventListener("DOMContentLoaded", function () {
                 document.getElementById('gis-modal-alamat').value = '';
             } else {
                 alertEl.className = 'alert alert-danger mt-3';
-                alertEl.textContent = data.message || 'Gagal menyimpan temuan.';
+                let errMsg = data.message || 'Gagal menyimpan temuan.';
+                if (data.errors && typeof data.errors === 'object') {
+                    const errList = Object.values(data.errors).filter(Boolean).join(' ');
+                    if (errList && !errMsg.includes(errList)) {
+                        errMsg += ' ' + errList;
+                    }
+                }
+                alertEl.textContent = errMsg;
+                alertEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
         })
         .catch(function(err) {
             alertEl.className = 'alert alert-danger mt-3';
-            alertEl.textContent = 'Terjadi kesalahan jaringan. Silakan coba lagi.';
+            alertEl.textContent = err && err.message ? err.message : 'Terjadi kesalahan jaringan. Silakan coba lagi.';
+            alertEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             console.error('[GIS_MODAL_ERR]', err);
         })
         .finally(function() {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-save me-1"></i> Simpan Temuan';
+            if (!isRedirectingAfterSave) {
+                btn.disabled = false;
+                btn.dataset.submitting = '0';
+                btn.innerHTML = '<i class="fas fa-save me-1"></i> Simpan Temuan';
+            }
         });
     });
 })();

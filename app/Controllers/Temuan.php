@@ -38,14 +38,14 @@ class Temuan extends BaseController
     private function getScopedUlpsAndPenyulangs(): array
     {
         $session = session();
-        $role = $session->get('user_role');
-        $userUlpId = $session->get('user_ulp_id');
-        $isRestricted = ($userUlpId !== null && !in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'pdkb', 'har_crane']));
+        $role = strtolower((string)($session->get('user_role') ?? $session->get('role') ?? 'guest'));
+        $userUlpId = $session->get('user_ulp_id') ?? $session->get('ulp_id');
+        $isRestricted = !in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3', 'pdkb', 'har_crane'], true);
 
         if ($isRestricted) {
-            $ulp = $this->ulpRepository->find($userUlpId);
+            $ulp = !empty($userUlpId) ? $this->ulpRepository->find((int)$userUlpId) : null;
             $ulps = $ulp ? [$ulp] : [];
-            $penyulangs = $userUlpId ? $this->penyulangRepository->getActivePenyulangsByUlp($userUlpId) : [];
+            $penyulangs = !empty($userUlpId) ? $this->penyulangRepository->getActivePenyulangsByUlp((int)$userUlpId) : [];
         } else {
             $ulps = $this->ulpRepository->getActiveUlps();
             $penyulangs = $this->penyulangRepository->getActivePenyulangs();
@@ -407,6 +407,29 @@ class Temuan extends BaseController
 
     public function store()
     {
+        $isAjaxRequest = $this->request->isAJAX()
+            || $this->request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest'
+            || str_contains($this->request->getHeaderLine('Accept'), 'application/json')
+            || $this->request->getPost('ajax') === '1';
+        $isQuickGisRequest = $this->request->getPost('from') === 'gis_inspection'
+            || $this->request->getPost('return_to') === 'gis';
+        $respondWithError = function (string $message, int $status = 422, array $errors = []) use ($isAjaxRequest) {
+            if ($isAjaxRequest) {
+                $fullMessage = $message;
+                if (!empty($errors) && $message === 'Periksa kembali data temuan yang wajib diisi.') {
+                    $fullMessage .= ' (' . implode(' ', array_values($errors)) . ')';
+                }
+                return $this->response->setStatusCode($status)->setJSON([
+                    'success' => false,
+                    'message' => $fullMessage,
+                    'errors'  => $errors,
+                ]);
+            }
+
+            return redirect()->to(site_url('temuan/create'))->withInput()->with('error', $message);
+        };
+
+        try {
         $session = session();
         $role = strtolower((string)($session->get('user_role') ?? $session->get('role') ?? 'guest'));
         $userUlpId = $session->get('user_ulp_id') ?? $session->get('ulp_id');
@@ -418,7 +441,12 @@ class Temuan extends BaseController
         $bomMaterialsCatalog = $txService->getActiveBomCatalog();
 
         if (!$this->validate($this->getTemuanFormRules())) {
-            log_message('error', '[TEMUAN_VALIDATION_ERRORS] ' . json_encode($this->validator->getErrors()));
+            $validationErrors = $this->validator->getErrors();
+            log_message('error', '[TEMUAN_VALIDATION_ERRORS] ' . json_encode($validationErrors));
+            if ($isAjaxRequest) {
+                return $respondWithError('Periksa kembali data temuan yang wajib diisi.', 422, $validationErrors);
+            }
+
             $defaultTanggal = $this->request->getPost('tanggal_temuan') ?: (old('tanggal_temuan') ?: $serverToday);
 
             return view('temuan/create', [
@@ -436,6 +464,10 @@ class Temuan extends BaseController
         $tanggalTemuan = (string)$this->request->getPost('tanggal_temuan');
         if ($tanggalTemuan > $serverToday) {
             $this->validator->setError('tanggal_temuan', 'Tanggal temuan tidak boleh melebihi tanggal hari ini (' . date('d/m/Y') . ').');
+            if ($isAjaxRequest) {
+                return $respondWithError($this->validator->getError('tanggal_temuan'), 422, $this->validator->getErrors());
+            }
+
             return view('temuan/create', [
                 'ulps'                => $ulps,
                 'isRestricted'        => $isRestricted,
@@ -454,8 +486,8 @@ class Temuan extends BaseController
 
         $ulpIdInput = (int)$this->request->getPost('ulp_id');
         $rawAuthoritativeId = trim((string)($this->request->getPost('authoritative_asset_id') ?? ''));
-        if ($isRestricted && $userUlpId !== null && (int)$userUlpId !== $ulpIdInput) {
-            return redirect()->to(site_url('temuan/create'))->with('error', 'Anda hanya diizinkan menginput temuan untuk ULP Anda.');
+        if ($isRestricted && (empty($userUlpId) || (int)$userUlpId !== $ulpIdInput)) {
+            return $respondWithError('Anda hanya diizinkan menginput temuan untuk ULP Anda.', 403);
         }
 
         $conductorTypePost = strtoupper(trim((string)($this->request->getPost('conductor_type') ?? '')));
@@ -487,8 +519,12 @@ class Temuan extends BaseController
             'material'              => $materialInput,
             'detail_temuan'         => trim($this->request->getPost('detail_temuan')),
             'alamat'                => trim($this->request->getPost('alamat')),
-            'latitude'              => $this->request->getPost('latitude') !== '' ? (float)$this->request->getPost('latitude') : null,
-            'longitude'             => $this->request->getPost('longitude') !== '' ? (float)$this->request->getPost('longitude') : null,
+            'latitude'              => ($this->request->getPost('latitude') ?? '') !== ''
+                ? (float)$this->request->getPost('latitude')
+                : (($isQuickGisRequest && ($this->request->getPost('context_lat') ?? '') !== '') ? (float)$this->request->getPost('context_lat') : null),
+            'longitude'             => ($this->request->getPost('longitude') ?? '') !== ''
+                ? (float)$this->request->getPost('longitude')
+                : (($isQuickGisRequest && ($this->request->getPost('context_lng') ?? '') !== '') ? (float)$this->request->getPost('context_lng') : null),
             'tanggal_temuan'        => $this->request->getPost('tanggal_temuan'),
         ];
 
@@ -558,7 +594,7 @@ class Temuan extends BaseController
         if (!empty($data['penyulang_id'])) {
             $feederCheck = $db->table('penyulang')->where('id', (int)$data['penyulang_id'])->get()->getRowArray();
             if (!$feederCheck || (int)$feederCheck['ulp_id'] !== $ulpIdInput) {
-                return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Penyulang yang dipilih tidak berada dalam ULP yang dipilih.');
+                return $respondWithError('Penyulang yang dipilih tidak berada dalam ULP yang dipilih.', 422);
             }
         }
 
@@ -566,7 +602,7 @@ class Temuan extends BaseController
         if (!empty($data['section_id'])) {
             $sectionCheck = $db->table('sections')->where('id', (int)$data['section_id'])->get()->getRowArray();
             if (!$sectionCheck || (int)$sectionCheck['penyulang_id'] !== (int)$data['penyulang_id']) {
-                return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Section yang dipilih tidak berada dalam penyulang yang dipilih.');
+                return $respondWithError('Section yang dipilih tidak berada dalam penyulang yang dipilih.', 422);
             }
         }
 
@@ -574,7 +610,7 @@ class Temuan extends BaseController
         if ($assetId !== null && $assetId > 0) {
             if ($db->tableExists('assets')) {
                 $assetRow = $db->table('assets a')
-                    ->select('a.id, a.kode_asset, a.nama_asset, a.status, a.latitude, a.longitude, COALESCE(a.ulp_id, p.ulp_id) AS ulp_id, a.penyulang_id, a.section_id')
+                    ->select('a.id, a.kode_asset, a.nama_asset, a.status, a.latitude, a.longitude, COALESCE(NULLIF(a.ulp_id, 0), p.ulp_id) AS ulp_id, a.penyulang_id, a.section_id')
                     ->join('penyulang p', 'p.id = a.penyulang_id', 'left')
                     ->where('a.id', $assetId)
                     ->where('a.deleted_at IS NULL')
@@ -582,27 +618,27 @@ class Temuan extends BaseController
                     ->getRowArray();
 
                 if (!$assetRow) {
-                    return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Aset jaringan yang dipilih tidak ditemukan atau sudah tidak aktif.');
+                    return $respondWithError('Aset jaringan yang dipilih tidak ditemukan atau sudah tidak aktif.', 422);
                 }
 
                 // Scope authorization: Restricted role cannot create finding for asset outside their ULP
-                if ($isRestricted && $userUlpId !== null && (int)$assetRow['ulp_id'] !== (int)$userUlpId) {
-                    return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Anda tidak memiliki hak akses untuk menginput temuan pada aset di luar ULP Anda.');
+                if ($isRestricted && (empty($userUlpId) || (int)$assetRow['ulp_id'] !== (int)$userUlpId)) {
+                    return $respondWithError('Anda tidak memiliki hak akses untuk menginput temuan pada aset di luar ULP Anda.', 403);
                 }
 
                 // Topological ULP alignment: Asset ULP must match selected ULP
                 if ((int)$assetRow['ulp_id'] !== $ulpIdInput) {
-                    return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Aset jaringan yang dipilih tidak berada dalam ULP yang sesuai.');
+                    return $respondWithError('Aset jaringan yang dipilih tidak berada dalam ULP yang sesuai.', 422);
                 }
 
                 // Topological Feeder alignment (if asset has feeder assigned)
                 if (!empty($assetRow['penyulang_id']) && (int)$assetRow['penyulang_id'] !== (int)$data['penyulang_id']) {
-                    return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Aset jaringan yang dipilih tidak berada dalam penyulang yang sesuai.');
+                    return $respondWithError('Aset jaringan yang dipilih tidak berada dalam penyulang yang sesuai.', 422);
                 }
 
                 // Topological Section alignment (if asset has section assigned)
                 if (!empty($assetRow['section_id']) && (int)$assetRow['section_id'] !== (int)$data['section_id']) {
-                    return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Aset jaringan yang dipilih tidak berada dalam section yang sesuai.');
+                    return $respondWithError('Aset jaringan yang dipilih tidak berada dalam section yang sesuai.', 422);
                 }
 
                 // CR-HOTFIX-02 PART B: COORDINATE INVARIANT ENFORCEMENT
@@ -611,7 +647,7 @@ class Temuan extends BaseController
                 $assetLng = $assetRow['longitude'] ?? null;
 
                 if ($assetLat === null || $assetLng === null || (float)$assetLat == 0.0 || (float)$assetLng == 0.0) {
-                    return redirect()->to(site_url('temuan/create'))->withInput()->with('error', 'Asset belum memiliki koordinat authoritative.');
+                    return $respondWithError('Asset belum memiliki koordinat authoritative.', 422);
                 }
 
                 // Strictly override any client-submitted coordinates with authoritative asset coordinates
@@ -636,7 +672,8 @@ class Temuan extends BaseController
         );
 
         $files = $this->request->getFileMultiple('foto');
-        $res = $this->temuanService->createTemuan($data, $files);
+        $photoRequired = !$isQuickGisRequest;
+        $res = $this->temuanService->createTemuan($data, $files, $photoRequired);
 
         if ($res['success']) {
             $insertedId = $res['id'] ?? null;
@@ -699,8 +736,6 @@ class Temuan extends BaseController
 
                 // Phase 5: Mobile Inspection Return Context Handoff
                 $fromGis = ($this->request->getPost('from') === 'gis_inspection') || ($this->request->getPost('return_to') === 'gis');
-                $isAjaxRequest = ($this->request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest')
-                    || ($this->request->getPost('ajax') === '1');
                 $focusAssetId = $this->request->getPost('focus_asset_id') ?: $assetId;
                 $cLat = $this->request->getPost('context_lat') ?: ($data['latitude'] ?? null);
                 $cLng = $this->request->getPost('context_lng') ?: ($data['longitude'] ?? null);
@@ -746,7 +781,11 @@ class Temuan extends BaseController
             return redirect()->to(site_url('temuan'))->with('success', $res['message']);
         }
 
-        return redirect()->to(site_url('temuan/create'))->withInput()->with('error', $res['message']);
+        return $respondWithError((string)($res['message'] ?? 'Gagal menyimpan temuan.'), 422);
+        } catch (\Throwable $e) {
+            log_message('error', '[TEMUAN_STORE_EXCEPTION] ' . $e->getMessage() . ' | ' . $e->getFile() . ':' . $e->getLine());
+            return $respondWithError('Gagal menyimpan temuan karena kendala sistem/database.', 500);
+        }
     }
 
     /**

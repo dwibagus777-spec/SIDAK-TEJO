@@ -120,25 +120,41 @@ class TemuanService
      */
     private function validatePhotos(?array $files, bool $required = true): ?string
     {
-        if (empty($files) || count($files) === 0 || !$files[0]->isValid()) {
+        $validFiles = [];
+        if (!empty($files)) {
+            foreach ($files as $file) {
+                if (!$file instanceof UploadedFile) {
+                    continue;
+                }
+                if ($file->getError() === UPLOAD_ERR_NO_FILE) {
+                    continue;
+                }
+                if (!$file->isValid()) {
+                    return 'Gagal mengunggah foto "' . $file->getName() . '": ' . $file->getErrorString();
+                }
+                $validFiles[] = $file;
+            }
+        }
+
+        if (empty($validFiles)) {
             if ($required) {
-                $errDetail = (!empty($files) && isset($files[0])) ? $files[0]->getErrorString() : 'File foto kosong.';
+                $errDetail = (!empty($files) && isset($files[0]) && $files[0] instanceof UploadedFile)
+                    ? $files[0]->getErrorString()
+                    : 'File foto kosong.';
                 return 'Unggah foto minimal 1 foto. Detail: ' . $errDetail;
             }
             return null;
         }
 
-        if (count($files) > 10) {
+        if (count($validFiles) > 10) {
             return 'Maksimal foto yang diunggah adalah 10 foto.';
         }
 
         $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
-        foreach ($files as $file) {
-            if ($file->isValid()) {
-                $ext = strtolower($file->getExtension() ?: pathinfo($file->getName(), PATHINFO_EXTENSION));
-                if (!in_array($ext, $allowedExtensions)) {
-                    return 'Format file "' . $file->getName() . '" tidak diizinkan. Hanya jpg, jpeg, png, webp.';
-                }
+        foreach ($validFiles as $file) {
+            $ext = strtolower($file->getExtension() ?: pathinfo($file->getName(), PATHINFO_EXTENSION));
+            if (!in_array($ext, $allowedExtensions, true)) {
+                return 'Format file "' . $file->getName() . '" tidak diizinkan. Hanya jpg, jpeg, png, webp.';
             }
         }
 
@@ -188,7 +204,7 @@ class TemuanService
     /**
      * Membuat Temuan Baru Beserta Pengunggahan Foto
      */
-    public function createTemuan(array $data, ?array $files): array
+    public function createTemuan(array $data, ?array $files = null, bool $photoRequired = true): array
     {
         $nomorTemuan = $this->temuanRepository->generateNomorTemuan();
         $session = session();
@@ -198,7 +214,7 @@ class TemuanService
         $data['created_by_name'] = $session->get('nama_pegawai') ?: $session->get('user_name');
         $data['created_by_nip'] = $session->get('nip') ?: '';
 
-        $uploadResult = $this->uploadMultiplePhotos($files, true);
+        $uploadResult = $this->uploadMultiplePhotos($files, $photoRequired);
         if (!$uploadResult['success']) {
             return [
                 'success' => false,
@@ -219,7 +235,15 @@ class TemuanService
             ])
         );
 
-        $insertId = $this->temuanRepository->insert($data);
+        try {
+            $insertId = $this->temuanRepository->insert($data);
+        } catch (\Throwable $e) {
+            log_message('error', '[createTemuan] Exception saat insert ke database: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Gagal menyimpan temuan ke database.'
+            ];
+        }
 
         if ($insertId) {
             log_activity('CREATE_TEMUAN', 'Menambahkan temuan baru: ' . $nomorTemuan);

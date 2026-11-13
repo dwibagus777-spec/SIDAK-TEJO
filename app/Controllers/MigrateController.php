@@ -5527,4 +5527,128 @@ class MigrateController extends BaseController
             'top_feeders'            => array_slice($translinesPerFeeder, 0, 10),
         ]);
     }
+
+    /**
+     * Read-only audit (GET) and non-destructive restoration (POST) of tb_foto_eviden files into SIDAK_STORAGE_PATH.
+     */
+    public function restoreEvidenPhotos()
+    {
+        @set_time_limit(300);
+        @ini_set('memory_limit', '512M');
+
+        $db = \Config\Database::connect('default');
+        $rows = $db->table('tb_foto_eviden')
+            ->select('id_foto, id_parent, kategori, jenis_foto, nama_file')
+            ->orderBy('id_foto', 'ASC')
+            ->get()
+            ->getResultArray();
+
+        $allowedFiles = [];
+        foreach ($rows as $r) {
+            $clean = basename((string) ($r['nama_file'] ?? ''));
+            if ($clean !== '') {
+                $allowedFiles[$clean] = true;
+            }
+        }
+
+        $storageDir = defined('SIDAK_STORAGE_PATH')
+            ? rtrim(SIDAK_STORAGE_PATH, '/\\') . DIRECTORY_SEPARATOR
+            : rtrim(WRITEPATH . 'uploads/foto', '/\\') . DIRECTORY_SEPARATOR;
+
+        if (!is_dir($storageDir)) {
+            @mkdir($storageDir, 0755, true);
+        }
+
+        $restoredCount = 0;
+        $skippedExisting = 0;
+        $rejectedCount = 0;
+        $errors = [];
+
+        if (strtolower($this->request->getMethod()) === 'post') {
+            $batchJson = (string) ($this->request->getPost('batch_json') ?? '');
+            $batch = $batchJson !== '' ? (json_decode($batchJson, true) ?: []) : [];
+
+            foreach ($batch as $item) {
+                $cleanName = basename((string) ($item['nama_file'] ?? ''));
+                if ($cleanName === '' || !isset($allowedFiles[$cleanName])) {
+                    $rejectedCount++;
+                    continue;
+                }
+
+                $destPath = $storageDir . $cleanName;
+                if (is_file($destPath) && filesize($destPath) > 0) {
+                    $skippedExisting++;
+                    continue;
+                }
+
+                $bin = base64_decode((string) ($item['content_b64'] ?? ''), true);
+                if ($bin === false || $bin === '') {
+                    $rejectedCount++;
+                    $errors[] = "Invalid base64 for {$cleanName}";
+                    continue;
+                }
+
+                $expectedSha = strtolower(trim((string) ($item['sha256'] ?? '')));
+                if ($expectedSha !== '' && !hash_equals($expectedSha, hash('sha256', $bin))) {
+                    $rejectedCount++;
+                    $errors[] = "SHA-256 mismatch for {$cleanName}";
+                    continue;
+                }
+
+                if (@file_put_contents($destPath, $bin, LOCK_EX) !== false) {
+                    @chmod($destPath, 0644);
+                    $restoredCount++;
+                } else {
+                    $errors[] = "Write failed for {$cleanName}";
+                }
+            }
+        }
+
+        $byKategori = [
+            'KUBIKEL' => ['total' => 0, 'present' => 0, 'missing' => 0],
+            'TRAFO'   => ['total' => 0, 'present' => 0, 'missing' => 0],
+        ];
+        $presentInStorage = 0;
+        $presentViaResolver = 0;
+        $missingFiles = [];
+
+        foreach ($rows as $r) {
+            $kat = strtoupper((string) ($r['kategori'] ?? 'OTHER'));
+            if (!isset($byKategori[$kat])) {
+                $byKategori[$kat] = ['total' => 0, 'present' => 0, 'missing' => 0];
+            }
+            $byKategori[$kat]['total']++;
+
+            $clean = basename((string) ($r['nama_file'] ?? ''));
+            $inStorage = ($clean !== '' && is_file($storageDir . $clean) && filesize($storageDir . $clean) > 0);
+            $resolved = function_exists('resolve_photo_path') ? resolve_photo_path((string) $r['nama_file']) : null;
+            $isPresent = $inStorage || ($resolved !== null && is_file($resolved));
+
+            if ($inStorage) {
+                $presentInStorage++;
+            }
+            if ($isPresent) {
+                $presentViaResolver++;
+                $byKategori[$kat]['present']++;
+            } else {
+                $byKategori[$kat]['missing']++;
+                $missingFiles[] = $clean;
+            }
+        }
+
+        return $this->response->setJSON([
+            'status'                   => 'success',
+            'method'                   => strtoupper($this->request->getMethod()),
+            'total_db_rows'            => count($rows),
+            'by_kategori'              => $byKategori,
+            'present_in_sidak_storage' => $presentInStorage,
+            'present_via_resolver'     => $presentViaResolver,
+            'missing_count'            => count($missingFiles),
+            'restored_in_request'      => $restoredCount,
+            'skipped_existing'         => $skippedExisting,
+            'rejected_count'           => $rejectedCount,
+            'errors'                   => $errors,
+            'missing_sample'           => array_slice(array_values(array_unique($missingFiles)), 0, 20),
+        ]);
+    }
 }

@@ -19,6 +19,7 @@ class ReconcileHarGttLabelCommand extends BaseCommand
     {
         $isExecute = CLI::getOption('execute') !== null;
         $db = \Config\Database::connect();
+        $svc = new \App\Services\HarGttReconciliationService($db);
 
         CLI::write("==================================================================", 'yellow');
         CLI::write("   SIDAK TEJO — REKONSILIASI LABEL PELAKSANA HAR GARDU -> HAR GTT", 'yellow');
@@ -26,17 +27,15 @@ class ReconcileHarGttLabelCommand extends BaseCommand
         CLI::write("Mode: " . ($isExecute ? "LIVE EXECUTION (TRANSACTIONAL UPDATE)" : "DRY-RUN (SIMULASI AUDIT)"), $isExecute ? 'red' : 'green');
         CLI::newLine();
 
-        // 1. Temuan table
-        $cTemuan = $db->table('temuan')->where('pelaksana', 'HAR GARDU')->countAllResults();
+        $snap = $svc->inspect();
+        $cTemuan = $snap['temuan_count'];
         $cTemuanGtt = $db->table('temuan')->where('pelaksana', 'HAR GTT')->countAllResults();
         CLI::write("Tabel 'temuan':", 'white');
         CLI::write("  • Record berlabel 'HAR GARDU' : {$cTemuan} baris", 'yellow');
         CLI::write("  • Record berlabel 'HAR GTT'   : {$cTemuanGtt} baris", 'cyan');
 
-        // 2. Work Orders table
-        $cWo = 0;
+        $cWo = $snap['work_orders_count'];
         if ($db->tableExists('work_orders') && $db->fieldExists('pelaksana', 'work_orders')) {
-            $cWo = $db->table('work_orders')->where('pelaksana', 'HAR GARDU')->countAllResults();
             CLI::write("Tabel 'work_orders':", 'white');
             CLI::write("  • Record berlabel 'HAR GARDU' : {$cWo} baris", 'yellow');
         }
@@ -50,36 +49,13 @@ class ReconcileHarGttLabelCommand extends BaseCommand
             return;
         }
 
-        $db->transStart();
-        $updatedTemuan = 0;
-        $updatedWo = 0;
-
-        if ($cTemuan > 0) {
-            $db->table('temuan')
-                ->where('pelaksana', 'HAR GARDU')
-                ->update(['pelaksana' => 'HAR GTT', 'updated_at' => date('Y-m-d H:i:s')]);
-            $updatedTemuan = $cTemuan;
-        }
-
-        if ($cWo > 0) {
-            $db->table('work_orders')
-                ->where('pelaksana', 'HAR GARDU')
-                ->update(['pelaksana' => 'HAR GTT', 'updated_at' => date('Y-m-d H:i:s')]);
-            $updatedWo = $cWo;
-        }
-
-        $db->transComplete();
-
-        if ($db->transStatus() === false) {
-            CLI::error("Gagal melakukan pembaruan label pada database.");
-            return;
-        }
+        $res = $svc->reconcile(true, 'CLI_SPARK');
 
         CLI::newLine();
         CLI::write("Hasil Eksekusi Transaksional:", 'green');
-        CLI::write("  • Temuan dimutasi ke 'HAR GTT'      : {$updatedTemuan} baris", 'green');
-        CLI::write("  • Work Orders dimutasi ke 'HAR GTT' : {$updatedWo} baris", 'green');
-        CLI::write("  • Total Terverifikasi Berhasil     : " . ($updatedTemuan + $updatedWo) . " baris", 'green');
+        CLI::write("  • Temuan dimutasi ke 'HAR GTT'      : {$res['temuan_updated']} baris", 'green');
+        CLI::write("  • Work Orders dimutasi ke 'HAR GTT' : {$res['work_orders_updated']} baris", 'green');
+        CLI::write("  • File Bukti Audit JSON             : " . ($res['audit_file'] ?? '-'), 'cyan');
         CLI::write("==================================================================", 'yellow');
     }
 }

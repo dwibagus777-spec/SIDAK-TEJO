@@ -136,10 +136,8 @@ if (!function_exists('apply_role_scoping')) {
         // Filter Pelaksana khusus untuk role teknis
         if ($userRole === 'pdkb') {
             $builder->where('temuan.pelaksana', 'PDKB');
-        } elseif ($userRole === 'har_gardu') {
-            $builder->where('temuan.pelaksana', 'HAR GARDU');
-        } elseif ($userRole === 'har_gtt') {
-            $builder->where('temuan.pelaksana', 'HAR GTT');
+        } elseif (in_array($userRole, ['har_gardu', 'har_gtt'], true)) {
+            $builder->whereIn('temuan.pelaksana', pelaksana_query_aliases('HAR GTT'));
         } elseif ($userRole === 'har_konstruksi') {
             $builder->where('temuan.pelaksana', 'HAR KONSTRUKSI');
         } elseif ($userRole === 'har_row') {
@@ -149,11 +147,49 @@ if (!function_exists('apply_role_scoping')) {
         } elseif ($userRole === 'har_trafo') {
             $builder->groupStart()
                 ->where('temuan.pelaksana', 'HAR TRAFO')
-                ->orWhere('temuan.pelaksana', 'HAR GARDU')
+                ->orWhereIn('temuan.pelaksana', pelaksana_query_aliases('HAR GTT'))
                 ->groupEnd();
         }
 
         return $builder;
+    }
+}
+
+if (!function_exists('normalize_pelaksana_label')) {
+    /**
+     * Canonicalize pelaksana labels: legacy 'HAR GARDU' / 'HAR_GARDU' maps to 'HAR GTT'.
+     */
+    function normalize_pelaksana_label(?string $pelaksana, string $default = ''): string
+    {
+        $clean = strtoupper(trim((string)preg_replace('/\s+/', ' ', str_replace('_', ' ', (string)$pelaksana))));
+        if ($clean === '') {
+            return $default;
+        }
+        $cleanHyphen = str_replace('-', ' ', $clean);
+        if (in_array($cleanHyphen, ['HAR GARDU', 'GARDU', 'HAR GTT'], true)) {
+            return 'HAR GTT';
+        }
+        return $clean;
+    }
+}
+
+if (!function_exists('pelaksana_query_aliases')) {
+    /**
+     * Return DB query aliases matching a canonical pelaksana (including un-migrated legacy rows).
+     *
+     * @return list<string>
+     */
+    function pelaksana_query_aliases(?string $pelaksana): array
+    {
+        $canon = normalize_pelaksana_label($pelaksana);
+        if ($canon === '') {
+            return [];
+        }
+        if ($canon === 'HAR GTT') {
+            return ['HAR GTT', 'HAR GARDU', 'HAR_GTT', 'HAR_GARDU', 'HAR-GTT', 'HAR-GARDU'];
+        }
+        $under = str_replace(' ', '_', $canon);
+        return $under !== $canon ? [$canon, $under] : [$canon];
     }
 }
 

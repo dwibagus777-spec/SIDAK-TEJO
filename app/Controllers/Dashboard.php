@@ -200,22 +200,32 @@ class Dashboard extends BaseController
         $pelaksanaByFeeder = [];
         foreach ($pelaksanaBreakdownRows as $pRow) {
             $pid = (int)$pRow['penyulang_id'];
-            if (!isset($pelaksanaByFeeder[$pid])) {
-                $pelaksanaByFeeder[$pid] = [];
+            $canonPel = function_exists('normalize_pelaksana_label')
+                ? normalize_pelaksana_label((string)($pRow['pelaksana_name'] ?? ''), 'LAINNYA')
+                : (string)($pRow['pelaksana_name'] ?? 'LAINNYA');
+            if (!isset($pelaksanaByFeeder[$pid][$canonPel])) {
+                $pelaksanaByFeeder[$pid][$canonPel] = [
+                    'pelaksana'     => $canonPel,
+                    'emg'           => 0,
+                    'high'          => 0,
+                    'med'           => 0,
+                    'low'           => 0,
+                    'belum_selesai' => 0,
+                    'total_temuan'  => 0,
+                ];
             }
-            $pelaksanaByFeeder[$pid][] = [
-                'pelaksana'     => $pRow['pelaksana_name'],
-                'emg'           => (int)$pRow['emg'],
-                'high'          => (int)$pRow['high'],
-                'med'           => (int)$pRow['med'],
-                'low'           => (int)$pRow['low'],
-                'belum_selesai' => (int)$pRow['belum_selesai'],
-                'total_temuan'  => (int)$pRow['total_temuan'],
-            ];
+            $pelaksanaByFeeder[$pid][$canonPel]['emg']           += (int)$pRow['emg'];
+            $pelaksanaByFeeder[$pid][$canonPel]['high']          += (int)$pRow['high'];
+            $pelaksanaByFeeder[$pid][$canonPel]['med']           += (int)$pRow['med'];
+            $pelaksanaByFeeder[$pid][$canonPel]['low']           += (int)$pRow['low'];
+            $pelaksanaByFeeder[$pid][$canonPel]['belum_selesai'] += (int)$pRow['belum_selesai'];
+            $pelaksanaByFeeder[$pid][$canonPel]['total_temuan']  += (int)$pRow['total_temuan'];
         }
 
         foreach ($top10Feeders as &$f) {
-            $f['pelaksana_breakdown'] = $pelaksanaByFeeder[$f['id']] ?? [];
+            $list = array_values($pelaksanaByFeeder[$f['id']] ?? []);
+            usort($list, static fn(array $a, array $b): int => ($b['belum_selesai'] <=> $a['belum_selesai']) ?: strcmp($a['pelaksana'], $b['pelaksana']));
+            $f['pelaksana_breakdown'] = $list;
         }
         unset($f);
 

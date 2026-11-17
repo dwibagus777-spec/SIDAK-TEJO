@@ -20,7 +20,7 @@ class RecommendationEngine
         // Determine recommended pelaksana
         $recPelaksana = match($jenisTemuan) {
             'ROW'       => 'HAR ROW',
-            'HOTSPOT'   => ($prioritas === 'EMERGENCY') ? 'PDKB' : 'HAR GARDU',
+            'HOTSPOT'   => ($prioritas === 'EMERGENCY') ? 'PDKB' : 'HAR GTT',
             'KONSTRUKSI'=> 'HAR KONSTRUKSI',
             default     => $pelaksana
         };

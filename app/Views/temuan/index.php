@@ -185,8 +185,8 @@
                         <select id="filter_pelaksana" class="form-control form-control-sm select2">
                             <option value="">-- Semua Pelaksana --</option>
                             <option value="PDKB" <?= (strtoupper((string)($selectedPelaksana ?? '')) === 'PDKB') ? 'selected' : '' ?>>PDKB</option>
-                            <option value="HAR GARDU" <?= (in_array(strtoupper((string)($selectedPelaksana ?? '')), ['HAR GARDU', 'HAR_GARDU'], true)) ? 'selected' : '' ?>>HAR GARDU</option>
-                            <option value="HAR GTT" <?= (in_array(strtoupper((string)($selectedPelaksana ?? '')), ['HAR GTT', 'HAR_GTT'], true)) ? 'selected' : '' ?>>HAR GTT</option>
+                            <option value="HAR GTT" <?= (in_array(strtoupper(str_replace('_', ' ', (string)($selectedPelaksana ?? ''))), ['HAR GTT', 'HAR GARDU'], true)) ? 'selected' : '' ?>>HAR GTT</option>
+
                             <option value="HAR KONSTRUKSI" <?= (in_array(strtoupper((string)($selectedPelaksana ?? '')), ['HAR KONSTRUKSI', 'HAR_KONSTRUKSI'], true)) ? 'selected' : '' ?>>HAR KONSTRUKSI</option>
                             <option value="HAR ROW" <?= (in_array(strtoupper((string)($selectedPelaksana ?? '')), ['HAR ROW', 'HAR_ROW'], true)) ? 'selected' : '' ?>>HAR ROW</option>
                             <option value="HAR CRANE" <?= (in_array(strtoupper((string)($selectedPelaksana ?? '')), ['HAR CRANE', 'HAR_CRANE'], true)) ? 'selected' : '' ?>>HAR CRANE</option>
@@ -458,7 +458,8 @@
             $('#filter_penyulang_id').val(urlPenyulangId).trigger('change.select2');
         }
         if (urlPelaksana) {
-            const cleanPelaksana = urlPelaksana.toUpperCase().replace(/_/g, ' ');
+            let cleanPelaksana = urlPelaksana.toUpperCase().replace(/_/g, ' ').trim();
+            if (cleanPelaksana === 'HAR GARDU' || cleanPelaksana === 'HAR-GARDU' || cleanPelaksana === 'GARDU') cleanPelaksana = 'HAR GTT';
             $('#filter_pelaksana').val(cleanPelaksana).trigger('change.select2');
         }
         if (urlPrioritas) {

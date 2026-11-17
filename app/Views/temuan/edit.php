@@ -102,9 +102,9 @@
                             <label for="pelaksana">Pelaksana Pekerjaan <span class="text-danger">*</span></label>
                             <select name="pelaksana" id="pelaksana" class="form-control select2 <?= ($validation && $validation->hasError('pelaksana')) ? 'is-invalid' : '' ?>" required>
                                 <option value="">-- Pilih Pelaksana --</option>
-                                <?php $pl = old('pelaksana', $temuan['pelaksana']); ?>
+                                <?php $plRaw = old('pelaksana', $temuan['pelaksana']); ?>
+                                <?php $pl = function_exists('normalize_pelaksana_label') ? normalize_pelaksana_label((string)$plRaw) : strtoupper(trim((string)$plRaw)); ?>
                                 <option value="PDKB"          <?= $pl === 'PDKB'          ? 'selected' : '' ?>>PDKB</option>
-                                <option value="HAR GARDU"      <?= $pl === 'HAR GARDU'      ? 'selected' : '' ?>>HAR GARDU</option>
                                 <option value="HAR GTT"        <?= $pl === 'HAR GTT'        ? 'selected' : '' ?>>HAR GTT</option>
                                 <option value="HAR KONSTRUKSI" <?= $pl === 'HAR KONSTRUKSI' ? 'selected' : '' ?>>HAR KONSTRUKSI</option>
                                 <option value="HAR ROW"        <?= $pl === 'HAR ROW'        ? 'selected' : '' ?>>HAR ROW</option>

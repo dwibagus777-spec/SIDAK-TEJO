@@ -83,7 +83,7 @@
                     <select id="gen_pekerjaan" class="form-select form-select-sm">
                         <option value="SEMUA" selected>-- Seluruh Pekerjaan (Semua Tim) --</option>
                         <option value="HAR ROW">HAR ROW (Pemotongan / Rabas Pohon)</option>
-                        <option value="HAR GARDU">HAR GARDU (Pemeliharaan Gardu Distribusi)</option>
+                        <option value="HAR GTT">HAR GTT (Pemeliharaan Gardu / GTT)</option>
                         <option value="HAR KONSTRUKSI">HAR KONSTRUKSI (Perbaikan Konstruksi Tiang/JTM)</option>
                         <option value="PDKB">PDKB (Pekerjaan Dalam Keadaan Bertegangan)</option>
                         <option value="YANTEK">YANTEK (Pelayanan Teknik & Gangguan)</option>

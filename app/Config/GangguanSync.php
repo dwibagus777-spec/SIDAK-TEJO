@@ -17,7 +17,7 @@ class GangguanSync extends BaseConfig
     public string $spreadsheetGid = '0';
     public string $sheetName = 'DATA_GANGGUAN';
     public string $sourceLabel = 'Google Sheets (DATA_GANGGUAN)';
-    public int $autoSyncTtlSeconds = 300;
+    public int $autoSyncTtlSeconds = 60;
     public int $httpTimeoutSeconds = 15;
 
     protected string $customCsvUrl = '';

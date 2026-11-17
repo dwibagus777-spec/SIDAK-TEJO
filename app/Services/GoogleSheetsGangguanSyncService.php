@@ -14,6 +14,7 @@ use Config\GangguanSync;
 class GoogleSheetsGangguanSyncService
 {
     public const SOURCE_SYSTEM_SYNC = 'GOOGLE_SHEETS_SYNC';
+    private const PARSER_VERSION    = 'v2-ens-multidot-fix';
 
     private const MONTH_MAP = [
         'jan' => 1, 'feb' => 2, 'mar' => 3, 'apr' => 4,
@@ -243,7 +244,7 @@ class GoogleSheetsGangguanSyncService
         rsort($years);
 
         $hashPayload = array_map(static fn(array $r): string => $r['source_record_hash'], $records);
-        $datasetChecksum = hash('sha256', implode("\n", $hashPayload));
+        $datasetChecksum = hash('sha256', self::PARSER_VERSION . "\n" . implode("\n", $hashPayload));
 
         return [
             'records'          => $records,
@@ -264,7 +265,11 @@ class GoogleSheetsGangguanSyncService
             return $body;
         }
 
-        $headers = ['Accept: text/csv, text/plain;q=0.9'];
+        $headers = [
+            'Accept: text/csv, text/plain;q=0.9',
+            'Cache-Control: no-cache, no-store, must-revalidate',
+            'Pragma: no-cache',
+        ];
         $token = $this->config->getAuthBearerToken();
         if ($token !== '') {
             $headers[] = 'Authorization: Bearer ' . $token;
@@ -397,18 +402,18 @@ class GoogleSheetsGangguanSyncService
         $giName  = strtoupper($get('gardu induk', 5)) ?: 'SIDOARJO';
 
         $rawUlp      = strtoupper($get('ulp', 6));
-        $cleanUlpKey = trim(str_ireplace('ULP', '', $rawUlp));
+        $cleanUlpKey = preg_replace('/\s+/', ' ', trim(str_ireplace('ULP', '', $rawUlp))) ?? '';
         $ulpId       = $ulpLookup[$cleanUlpKey] ?? null;
 
-        $deviceType = strtoupper($get('pmt-recl/pmcb', 7)) ?: 'RECL-PMCB';
-        $rawFeeder  = strtoupper($get('penyulang', 8));
+        $deviceType = strtoupper(preg_replace('/\s+/', ' ', $get('pmt-recl/pmcb', 7)) ?? '') ?: 'RECL-PMCB';
+        $rawFeeder  = strtoupper(preg_replace('/\s+/', ' ', $get('penyulang', 8)) ?? '');
         if ($rawFeeder === '') {
             return null;
         }
         $penyulangId = $this->resolveFeederId($rawFeeder, $feederLookup);
 
-        $namaSwitching = $get('nama switching', 9);
-        $recloserName  = $get('recloser', 10);
+        $namaSwitching = preg_replace('/\s+/', ' ', $get('nama switching', 9)) ?? '';
+        $recloserName  = preg_replace('/\s+/', ' ', $get('recloser', 10)) ?? '';
         $deviceName    = $recloserName !== '' ? $recloserName : $namaSwitching;
 
         $tripDate  = $this->parseDate($get('tgl pmt trip', 11)) ?: $eventDate;
@@ -428,19 +433,19 @@ class GoogleSheetsGangguanSyncService
         $rawKategori = $get('kategori', 19);
         $category    = $this->normalizeCategory($rawKategori);
 
-        $releKerja = strtoupper($get('rele kerja', 20));
-        $fasa      = strtoupper($get('fasa', 21));
-        $cuaca     = strtolower($get('cuaca', 22));
-        $kelompok  = $get('kelompok ggn', 24) ?: 'GGN_PENYULANG';
+        $releKerja = strtoupper(preg_replace('/\s+/', ' ', $get('rele kerja', 20)) ?? '');
+        $fasa      = strtoupper(preg_replace('/\s+/', ' ', $get('fasa', 21)) ?? '');
+        $cuaca     = strtolower(preg_replace('/\s+/', ' ', $get('cuaca', 22)) ?? '');
+        $kelompok  = preg_replace('/\s+/', ' ', $get('kelompok ggn', 24)) ?: 'GGN_PENYULANG';
         $narrative = $get('keterangan', 26);
         $action    = $get('tindak lanjut', 27);
 
-        $causeCodeRaw = strtoupper($get('penyebab sesuai kode gangguan', 30));
+        $causeCodeRaw = strtoupper(preg_replace('/\s+/', ' ', $get('penyebab sesuai kode gangguan', 30)) ?? '');
         if ($causeCodeRaw === '') {
-            $causeCodeRaw = strtoupper($get('penyebab', 28));
+            $causeCodeRaw = strtoupper(preg_replace('/\s+/', ' ', $get('penyebab', 28)) ?? '');
         }
         if ($causeCodeRaw === '') {
-            $causeCodeRaw = 'BELUM DIKETEMUKAN';
+            $causeCodeRaw = 'TIDAK TERCATAT';
         }
 
         if (!isset($causeCache[$causeCodeRaw])) {
@@ -448,29 +453,9 @@ class GoogleSheetsGangguanSyncService
         }
         $causeRes = $causeCache[$causeCodeRaw];
 
-        $hashPayload = [
-            $rowNumber,
-            $up3Name,
-            $eventDate,
-            $giName,
-            $rawUlp,
-            $deviceType,
-            $rawFeeder,
-            $deviceName,
-            $startedAt,
-            $endedAt ?? '',
-            $lamaPadam,
-            $amperes !== null ? (string)$amperes : '',
-            $ensKwh !== null ? (string)$ensKwh : '',
-            $rawKategori,
-            $releKerja,
-            $fasa,
-            $cuaca,
-            $narrative,
-            $action,
-            $causeCodeRaw,
-        ];
-        $recordHash = hash('sha256', implode('|#|', $hashPayload));
+        // Include every trimmed cell in the row hash so edits to any column in Google Sheets trigger sync
+        $rawRowCells = array_map(static fn($v): string => trim((string)$v), $row);
+        $recordHash  = hash('sha256', $rowNumber . '|#|' . implode('|#|', $rawRowCells));
 
         $hasIssues = ($category === 'UNKNOWN') || ($causeRes['cause_mapping_status'] === 'UNMAPPED');
 
@@ -675,7 +660,9 @@ class GoogleSheetsGangguanSyncService
         } elseif (str_contains($str, ',')) {
             $str = str_replace(',', '.', $str);
         } elseif (substr_count($str, '.') >= 2) {
-            $str = str_replace('.', '', $str);
+            // Google Sheets locale quirk (e.g. "7.914.779" in column ( Kwh )): thousands '.' + final '.' decimal
+            $lastDot = strrpos($str, '.');
+            $str = str_replace('.', '', substr($str, 0, $lastDot)) . '.' . substr($str, $lastDot + 1);
         }
 
         return is_numeric($str) ? round((float)$str, $precision) : null;

@@ -55,7 +55,7 @@
                         <label class="form-label fw-bold">Tim / Regu Pelaksana</label>
                         <select name="pelaksana" class="form-select">
                             <option value="INSPEKSI">INSPEKSI</option>
-                            <option value="HAR GARDU">HAR GARDU</option>
+                            <option value="HAR GTT">HAR GTT</option>
                             <option value="HAR KONSTRUKSI">HAR KONSTRUKSI</option>
                             <option value="HAR ROW">HAR ROW</option>
                             <option value="HAR CRANE">HAR CRANE</option>

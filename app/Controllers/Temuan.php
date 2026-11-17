@@ -207,7 +207,10 @@ class Temuan extends BaseController
 
         $selectedPenyulangId = $this->request->getGet('penyulang_id') ? (int)$this->request->getGet('penyulang_id') : null;
         $selectedUlpId       = $this->request->getGet('ulp_id') ? (int)$this->request->getGet('ulp_id') : null;
-        $selectedPelaksana   = $this->request->getGet('pelaksana') ? trim((string)$this->request->getGet('pelaksana')) : null;
+        $rawPelaksana        = $this->request->getGet('pelaksana') ? trim((string)$this->request->getGet('pelaksana')) : null;
+        $selectedPelaksana   = ($rawPelaksana !== null && function_exists('normalize_pelaksana_label'))
+            ? (normalize_pelaksana_label($rawPelaksana) ?: null)
+            : $rawPelaksana;
         $selectedMonth       = $this->request->getGet('month') ? (int)$this->request->getGet('month') : null;
         $selectedYear        = $this->request->getGet('year') ? (int)$this->request->getGet('year') : null;
         $selectedStatus      = $this->request->getGet('status') ? (string)$this->request->getGet('status') : null;
@@ -509,7 +512,7 @@ class Temuan extends BaseController
             'section_id'            => (int)$this->request->getPost('section_id'),
             'jenis_temuan'          => $this->request->getPost('jenis_temuan'),
             'finding_component_key' => trim((string)($this->request->getPost('finding_component_key') ?? '')) ?: null,
-            'pelaksana'             => $this->request->getPost('pelaksana'),
+            'pelaksana'             => normalize_pelaksana_label((string)$this->request->getPost('pelaksana'), 'YANTEK'),
             'prioritas'             => $this->request->getPost('prioritas'),
             'potensi_gangguan'      => $this->request->getPost('potensi_gangguan'),
             'konduktor'             => $konduktorText,
@@ -1145,6 +1148,9 @@ class Temuan extends BaseController
 
             $sla     = get_sla_status($temuan['prioritas'], $temuan['tanggal_temuan'], $temuan['status'], $temuan['tanggal_selesai']);
             $history = $this->tindakLanjutRepository->getHistoryByTemuan($id);
+            if (!empty($temuan['pelaksana']) && function_exists('normalize_pelaksana_label')) {
+                $temuan['pelaksana'] = normalize_pelaksana_label((string)$temuan['pelaksana'], 'YANTEK');
+            }
 
             return $this->jsonResponse([
                 'success'   => true,
@@ -1377,7 +1383,7 @@ class Temuan extends BaseController
             'section_id'            => (int)$this->request->getPost('section_id'),
             'jenis_temuan'          => $this->request->getPost('jenis_temuan'),
             'finding_component_key' => trim((string)($this->request->getPost('finding_component_key') ?? ($temuan['finding_component_key'] ?? ''))) ?: null,
-            'pelaksana'             => $this->request->getPost('pelaksana'),
+            'pelaksana'             => normalize_pelaksana_label((string)$this->request->getPost('pelaksana'), 'YANTEK'),
             'prioritas'             => $this->request->getPost('prioritas'),
             'potensi_gangguan'      => $this->request->getPost('potensi_gangguan'),
             'konduktor'             => $konduktorText,
@@ -1947,7 +1953,7 @@ class Temuan extends BaseController
 
         $rolePelaksanaMap = [
             'pdkb'           => 'PDKB',
-            'har_gardu'      => 'HAR GARDU',
+            'har_gardu'      => 'HAR GTT',
             'har_gtt'        => 'HAR GTT',
             'har_row'        => 'HAR ROW',
             'har_crane'      => 'HAR CRANE',
@@ -1980,7 +1986,7 @@ class Temuan extends BaseController
 
         $rolePelaksanaMap = [
             'pdkb'           => 'PDKB',
-            'har_gardu'      => 'HAR GARDU',
+            'har_gardu'      => 'HAR GTT',
             'har_gtt'        => 'HAR GTT',
             'har_row'        => 'HAR ROW',
             'har_crane'      => 'HAR CRANE',

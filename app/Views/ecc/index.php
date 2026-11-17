@@ -175,7 +175,7 @@ $(document).ready(function() {
         }
     }
     if (empty($pelaksanaCats)) {
-        $pelaksanaCats = ['PDKB', 'HAR ROW', 'HAR KONSTRUKSI', 'HAR GARDU', 'HAR CRANE', 'YANTEK'];
+        $pelaksanaCats = ['PDKB', 'HAR ROW', 'HAR KONSTRUKSI', 'HAR GTT', 'HAR CRANE', 'YANTEK'];
         $pelaksanaVals = [0, 0, 0, 0, 0, 0];
     }
     ?>

@@ -793,7 +793,7 @@ $safetyAnalysis = $aiRecommendation['k2_k3_analysis'] ?? [];
                                 <span class="badge px-2 py-1 <?= $statusClass ?>">Status: <?= $statusStr ?></span>
                             </div>
                             <div class="small text-muted mt-2">
-                                Pelaksana: <strong><?= esc($temuan['pelaksana']) ?></strong>
+                                Pelaksana: <strong><?= esc(function_exists('normalize_pelaksana_label') ? normalize_pelaksana_label((string)$temuan['pelaksana'], 'YANTEK') : $temuan['pelaksana']) ?></strong>
                             </div>
                         </div>
                     </div>

@@ -70,8 +70,10 @@
     .dah-container {
         font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         color: #1e293b;
-        overflow-x: hidden;
+        overflow-x: clip;
         max-width: 100%;
+        padding-left: 14px !important;
+        padding-right: 14px !important;
     }
     .dah-card {
         background: #ffffff;
@@ -734,7 +736,7 @@
                                     }
                                 ?>
                                 <span class="badge <?= $badgeClass ?>" style="font-size: 10.5px;">
-                                    <?= esc($ef['pelaksana'] ?? 'YANTEK') ?>
+                                    <?= esc(function_exists('normalize_pelaksana_label') ? normalize_pelaksana_label((string)($ef['pelaksana'] ?? ''), 'YANTEK') : ($ef['pelaksana'] ?? 'YANTEK')) ?>
                                 </span>
                             </td>
                             <td>
@@ -1115,7 +1117,7 @@
                                 </div>
                                 <div class="text-muted text-truncate mb-1" style="font-size: 11px;"><?= esc($act['detail_temuan'] ?: ($act['jenis_temuan'] ?? 'Inspeksi fisik')) ?></div>
                                 <div class="d-flex justify-content-between align-items-center text-muted" style="font-size: 10px;">
-                                    <span><i class="fas fa-user-circle me-1"></i> <?= esc($act['pelaksana'] ?: 'Team HAR') ?></span>
+                                    <span><i class="fas fa-user-circle me-1"></i> <?= esc(function_exists('normalize_pelaksana_label') ? normalize_pelaksana_label((string)($act['pelaksana'] ?? ''), 'Team HAR') : ($act['pelaksana'] ?: 'Team HAR')) ?></span>
                                     <span><?= date('H:i', strtotime($act['created_at'] ?? 'now')) ?> WIB</span>
                                 </div>
                             </div>
@@ -1234,7 +1236,7 @@
                     <div>
                         <h5 class="fw-bold text-dark mb-0" style="font-size: 14px;">Tabel Temuan dan Kebutuhan Material (Standar BOM Konstruksi PLN)</h5>
                         <div class="small text-muted" style="font-size: 11px;">
-                            Rekapitulasi temuan aktif khusus pelaksana <strong>PDKB</strong>, <strong>HAR KONSTRUKSI</strong>, <strong>HAR GARDU</strong>, <strong>HAR GTT</strong>, dan <strong>HAR CRANE</strong> (tanpa temuan ROW) per GI, ULP, Penyulang, Section, Spesifikasi Konduktor (<code>AAAC</code>, <code>AAACS</code>, <code>MVTIC</code>, <code>XLPE</code> &bull; <code>70</code>, <code>110</code>, <code>150</code>, <code>240 mm²</code>), serta rincian kebutuhan material BOM aktual
+                            Rekapitulasi temuan aktif khusus pelaksana <strong>PDKB</strong>, <strong>HAR KONSTRUKSI</strong>, <strong>HAR GTT</strong>, dan <strong>HAR CRANE</strong> (tanpa temuan ROW) per GI, ULP, Penyulang, Section, Spesifikasi Konduktor (<code>AAAC</code>, <code>AAACS</code>, <code>MVTIC</code>, <code>XLPE</code> &bull; <code>70</code>, <code>110</code>, <code>150</code>, <code>240 mm²</code>), serta rincian kebutuhan material BOM aktual
                         </div>
                     </div>
                 </div>
@@ -1373,7 +1375,7 @@
                                     </td>
                                     <td><span class="text-muted small"><?= esc($f['nama_ulp']) ?></span></td>
                                     <td class="text-center">
-                                        <span class="<?= $pelaksanaBadge ?>" style="font-size: 10px;"><?= esc($f['norm_pelaksana']) ?></span>
+                                        <span class="<?= $pelaksanaBadge ?>" style="font-size: 10px;"><?= esc(function_exists('normalize_pelaksana_label') ? normalize_pelaksana_label((string)($f['norm_pelaksana'] ?? '')) : $f['norm_pelaksana']) ?></span>
                                     </td>
                                     <td class="text-center">
                                         <span class="<?= $prioBadge ?>" style="font-size: 10px;"><?= esc($prio) ?></span>
@@ -1738,7 +1740,7 @@
     <!-- 6C. ANALISIS KEANDALAN & GANGGUAN PENYULANG (SUMBER SAMA DENGAN /gangguan) -->
     <!-- Grafik Gangguan Kumulatif (Perbandingan 2 Tahun & Multi-Metrik) -->
     <div class="card dah-card dah-cum-card shadow-sm border mb-3">
-        <div class="card-header bg-white py-2 px-3 border-bottom">
+        <div class="card-header d-block bg-white py-2 px-3 border-bottom">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
                 <div class="d-flex align-items-center gap-2">
                     <span class="badge bg-danger-subtle text-danger p-2 rounded-2"><i class="fas fa-chart-line"></i></span>
@@ -1788,7 +1790,7 @@
 
             <!-- Zero-Reload Metric Pills & Dynamic Summary Badges -->
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pt-2 border-top">
-                <div class="btn-group btn-group-sm rounded-pill p-0.5 bg-light border" role="group" id="yoyMetricToggleGroup" style="font-size: 11px;">
+                <div class="btn-group btn-group-sm flex-wrap rounded-3 p-0.5 bg-light border" role="group" id="yoyMetricToggleGroup" style="font-size: 11px; max-width: 100%;">
                     <button type="button" class="btn btn-xs rounded-pill px-2.5 py-0.5 fw-semibold btn-primary" id="btnMetricTrips" onclick="switchYoYMetric('trips', this)">
                         <i class="fas fa-chart-line me-1"></i>Total Trip Kumulatif
                     </button>
@@ -1806,7 +1808,7 @@
                     </button>
                 </div>
 
-                <div class="d-flex align-items-center gap-1.5">
+                <div class="d-flex flex-wrap align-items-center gap-1.5" style="max-width: 100%;">
                     <span class="badge border rounded-pill px-2.5 py-1 fw-bold font-monospace bg-danger-subtle text-danger border-danger-subtle" id="badgeYearA" style="font-size: 11px;">
                         Tahun A: -
                     </span>
@@ -1830,10 +1832,73 @@
             </div>
             <?php endif; ?>
             <div class="dah-cum-chart-box w-100 position-relative" id="cumulativeChartContainer" style="min-height: 250px;">
-                <canvas id="cumulativeGangguanChart"></canvas>
+                <canvas id="cumulativeGangguanChart" role="img" aria-label="Grafik perbandingan gangguan 2 tahun dan metrik keandalan"></canvas>
                 <div id="chartNoDataOverlay" class="d-none position-absolute top-50 start-50 translate-middle text-center p-3 bg-white bg-opacity-75 rounded border shadow-sm">
                     <i class="fas fa-circle-info text-muted fs-4 mb-1"></i>
                     <div class="small fw-semibold text-dark" id="chartNoDataMsg">Data metrik belum tersedia pada periode ini.</div>
+                </div>
+            </div>
+            <div class="text-muted mt-1 w-100 text-end" style="font-size: 10.5px;">
+                <i class="fas fa-hand-pointer me-1" aria-hidden="true"></i>Klik titik atau batang pada grafik untuk melihat rincian kejadian gangguan.
+            </div>
+
+            <!-- ENS (kWh) Reliability Sub-Panel inside Card 6C (synced to Tahun A & Tahun B) -->
+            <div class="w-100 mt-3 pt-3 border-top" id="dashboardEnsPanel">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                    <div>
+                        <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-1.5" style="font-size: 13px;">
+                            <span class="badge bg-warning-subtle text-warning-emphasis p-1.5 rounded-2"><i class="fas fa-plug-circle-bolt" aria-hidden="true"></i></span>
+                            Analisis ENS (kWh) — Energy Not Supplied
+                        </h6>
+                        <small class="text-muted" style="font-size: 10.5px;">
+                            Sumber: kolom <code>( Kwh )</code> DATA_GANGGUAN &bull; Rumus: <span class="font-monospace">√3 &times; 20 kV &times; I (A) &times; 0,85 &times; Lama Padam (jam)</span>
+                        </small>
+                    </div>
+                    <div class="d-flex flex-wrap align-items-center gap-1.5" style="font-size: 10.5px;">
+                        <span class="badge border rounded-pill px-2.5 py-1 fw-bold font-monospace bg-danger-subtle text-danger border-danger-subtle" id="badgeEnsYearA">ENS A: -</span>
+                        <span class="badge border rounded-pill px-2.5 py-1 fw-bold font-monospace bg-primary-subtle text-primary border-primary-subtle" id="badgeEnsYearB">ENS B: -</span>
+                        <span class="badge border rounded-pill px-2 py-1 fw-bold font-monospace bg-light text-dark" id="badgeEnsDiff">YoY ENS: -</span>
+                    </div>
+                </div>
+                <div class="row g-3 align-items-stretch">
+                    <div class="col-lg-8 col-12">
+                        <div class="border rounded-3 p-2.5 bg-light bg-opacity-50 h-100 d-flex flex-column">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-1 mb-1.5">
+                                <span class="fw-bold text-dark" style="font-size: 12px;"><i class="fas fa-chart-column text-danger me-1" aria-hidden="true"></i>ENS (kWh) per Bulan (Tahun A vs Tahun B)</span>
+                                <span class="text-muted" style="font-size: 10px;">Satuan: kWh &bull; Klik batang untuk rincian bulan</span>
+                            </div>
+                            <div class="position-relative w-100" style="height: 220px;">
+                                <canvas id="ensMonthlyComparisonChart" role="img" aria-label="Grafik ENS (kWh) per bulan membandingkan tahun A dan tahun B"></canvas>
+                                <div id="ensMonthlyEmptyOverlay" class="d-none position-absolute top-50 start-50 translate-middle text-center p-2.5 bg-white bg-opacity-90 rounded border shadow-sm small text-muted">
+                                    Data ENS bulanan belum tersedia pada periode ini.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-12">
+                        <div class="border rounded-3 p-2.5 bg-light bg-opacity-50 h-100 d-flex flex-column justify-content-between gap-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold text-dark" style="font-size: 12px;"><i class="fas fa-scale-balanced text-warning-emphasis me-1" aria-hidden="true"></i>Perbandingan Total ENS per Tahun</span>
+                                <span class="text-muted" style="font-size: 10px;">Klik batang</span>
+                            </div>
+                            <div class="position-relative w-100" style="height: 155px;">
+                                <canvas id="ensAnnualComparisonChart" role="img" aria-label="Grafik perbandingan total ENS per tahun"></canvas>
+                                <div id="ensAnnualEmptyOverlay" class="d-none position-absolute top-50 start-50 translate-middle text-center p-2 bg-white bg-opacity-90 rounded border shadow-sm small text-muted">
+                                    Data total ENS belum tersedia.
+                                </div>
+                            </div>
+                            <div class="d-flex flex-column gap-1.5" style="font-size: 11px;">
+                                <button type="button" id="btnEnsCardA" class="btn btn-light border w-100 text-start px-2.5 py-1.5 rounded-2 d-flex flex-wrap justify-content-between align-items-center gap-1">
+                                    <span><strong class="text-danger" id="ensCardALabel">Tahun A</strong> <span class="text-muted" id="ensCardAMeta" style="font-size: 10px;">-</span></span>
+                                    <span class="fw-bold text-danger font-monospace" id="ensCardAVal">- kWh</span>
+                                </button>
+                                <button type="button" id="btnEnsCardB" class="btn btn-light border w-100 text-start px-2.5 py-1.5 rounded-2 d-flex flex-wrap justify-content-between align-items-center gap-1">
+                                    <span><strong class="text-primary" id="ensCardBLabel">Tahun B</strong> <span class="text-muted" id="ensCardBMeta" style="font-size: 10px;">-</span></span>
+                                    <span class="fw-bold text-primary font-monospace" id="ensCardBVal">- kWh</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1852,7 +1917,7 @@
                             <small class="text-muted" style="font-size: 11px;">Peringkat frekuensi trip tahun <span id="topFeedersYearLabel"><?= (int)($trendYear ?? date('Y')) ?></span> (Sumber: Rekap Gangguan)</small>
                         </div>
                     </div>
-                    <div class="d-flex align-items-center gap-1.5">
+                    <div class="d-flex flex-wrap align-items-center gap-1.5" style="max-width: 100%;">
                         <label for="trendYearSelectGangguan" class="small text-muted fw-semibold mb-0" style="font-size: 11px;">Tahun:</label>
                         <select id="trendYearSelectGangguan" class="form-select form-select-sm rounded-pill font-monospace" style="font-size: 11px; width: auto; padding: 2px 24px 2px 10px;" onchange="renderTopFeedersGangguanByYear(this.value)">
                             <?php foreach ($availableTrendYears ?? [date('Y')] as $yr): ?>
@@ -1875,10 +1940,12 @@
                                 </tr>
                             </thead>
                             <tbody id="topFeedersGangguanTableBody">
-                                <?php foreach (($topFeedersGangguan ?? []) as $rank => $row): ?>
-                                <tr>
+                                <?php foreach (($topFeedersGangguan ?? []) as $rank => $row):
+                                    $fLabel = (string)($row['nama_penyulang'] ?? $row['feeder_name'] ?? '-');
+                                ?>
+                                <tr class="dash-top-feeder-row" data-feeder="<?= esc($fLabel) ?>" title="Klik untuk detail gangguan penyulang <?= esc($fLabel) ?>">
                                     <td class="text-center text-muted fw-bold"><?= $rank + 1 ?></td>
-                                    <td class="fw-semibold text-dark"><?= esc($row['nama_penyulang'] ?? $row['feeder_name'] ?? '-') ?></td>
+                                    <td class="fw-semibold text-dark"><?= esc($fLabel) ?></td>
                                     <td class="text-muted small"><?= esc($row['nama_ulp'] ?? '-') ?></td>
                                     <td class="text-end fw-bold text-danger font-monospace"><?= (int)($row['cnt'] ?? 0) ?></td>
                                 </tr>
@@ -1965,7 +2032,7 @@
                                         $rowCount = (int)($cRow['count'] ?? $cRow['total'] ?? 0);
                                         $rowPct   = (float)($cRow['pct'] ?? ($initialCauseTotal > 0 ? round(($rowCount / $initialCauseTotal) * 100, 1) : 0));
                                     ?>
-                                    <tr>
+                                    <tr class="dash-cause-row" data-canonical="<?= esc($cRow['canonical_code'] ?? '') ?>" title="Klik untuk detail kejadian <?= esc($cRow['label'] ?? '') ?>">
                                         <td class="text-center text-muted fw-bold"><?= $cIdx + 1 ?></td>
                                         <td>
                                             <div class="fw-semibold text-dark"><?= esc($cRow['label'] ?? '-') ?></div>
@@ -2668,6 +2735,8 @@
     </div>
 </div>
 
+<?= $this->include('partials/_gangguan_drilldown_modal') ?>
+
 <!-- FOOTER RUNTIME SCRIPTS FOR CHARTS & GIS -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -3180,6 +3249,229 @@ document.addEventListener('DOMContentLoaded', function() {
     window.topFeedersGangguanByYear = <?= json_encode($topFeedersGangguanByYear ?? [], JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) ?>;
     window.currentYoYMetric = 'trips';
     window.yoyChartInstance = null;
+    window.ensMonthlyChartInstance = null;
+    window.ensAnnualChartInstance = null;
+
+    window.updateEnsComparisonCharts = function(yrA, yrB) {
+        try {
+            if (typeof Chart === 'undefined') return;
+            var labels     = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+            var payload    = window.yoyPayload || {};
+            var ensMoMap   = payload.ens_monthly || {};
+            var ensAnnMap  = payload.ens_annual || {};
+            var arrA       = Array.isArray(ensMoMap[yrA]) ? ensMoMap[yrA] : array_fill_null(12);
+            var arrB       = Array.isArray(ensMoMap[yrB]) ? ensMoMap[yrB] : array_fill_null(12);
+            var annA       = ensAnnMap[yrA] || { total_kwh: 0, valid_events: 0, total_events: 0, avg_per_trip: 0 };
+            var annB       = ensAnnMap[yrB] || { total_kwh: 0, valid_events: 0, total_events: 0, avg_per_trip: 0 };
+
+            var sumMonths  = function(arr) {
+                return arr.reduce(function(acc, v) { return acc + (v !== null && !isNaN(v) ? Number(v) : 0); }, 0);
+            };
+            var totA       = Number(typeof annA.total_kwh === 'number' ? annA.total_kwh : sumMonths(arrA));
+            var totB       = Number(typeof annB.total_kwh === 'number' ? annB.total_kwh : sumMonths(arrB));
+            var fmtKwh     = function(n, dec) {
+                var d = typeof dec === 'number' ? dec : 2;
+                return Number(n || 0).toLocaleString('id-ID', { minimumFractionDigits: d, maximumFractionDigits: d });
+            };
+
+            var bA    = document.getElementById('badgeEnsYearA');
+            var bB    = document.getElementById('badgeEnsYearB');
+            var bDiff = document.getElementById('badgeEnsDiff');
+            if (bA) bA.textContent = yrA + ': ' + fmtKwh(totA) + ' kWh';
+            if (bB) bB.textContent = yrB + ': ' + fmtKwh(totB) + ' kWh';
+            if (bDiff) {
+                var diff = totA - totB;
+                var pct  = totB > 0 ? ((diff / totB) * 100).toFixed(1) : (totA > 0 ? '+100.0' : '0.0');
+                var sign = diff > 0 ? '+' : '';
+                bDiff.textContent = 'YoY ENS: ' + sign + fmtKwh(diff, 1) + ' kWh (' + sign + pct + '%)';
+                bDiff.className = 'badge border rounded-pill px-2 py-1 fw-bold font-monospace ' +
+                    (diff <= 0 ? 'bg-success-subtle text-success border-success-subtle' : 'bg-danger-subtle text-danger border-danger-subtle');
+            }
+
+            var cAL = document.getElementById('ensCardALabel');
+            var cAV = document.getElementById('ensCardAVal');
+            var cAM = document.getElementById('ensCardAMeta');
+            var cBL = document.getElementById('ensCardBLabel');
+            var cBV = document.getElementById('ensCardBVal');
+            var cBM = document.getElementById('ensCardBMeta');
+            if (cAL) cAL.textContent = String(yrA);
+            if (cAV) cAV.textContent = fmtKwh(totA) + ' kWh';
+            if (cAM) cAM.textContent = '(' + (annA.total_events || 0) + ' trip • rata ' + fmtKwh(annA.avg_per_trip || 0, 1) + ' kWh)';
+            if (cBL) cBL.textContent = String(yrB);
+            if (cBV) cBV.textContent = fmtKwh(totB) + ' kWh';
+            if (cBM) cBM.textContent = '(' + (annB.total_events || 0) + ' trip • rata ' + fmtKwh(annB.avg_per_trip || 0, 1) + ' kWh)';
+
+            var ulpFilterVal = <?= !empty($selectedUlpId) ? (int)$selectedUlpId : 'null' ?>;
+            var triggerEnsDrilldown = function(dimension, key, targetYear, triggerEl) {
+                if (!window.openGangguanDrilldown) return;
+                window.openGangguanDrilldown({
+                    endpoint: '<?= site_url('gangguan/drilldown') ?>',
+                    triggerEl: triggerEl || document.getElementById('dashboardEnsPanel'),
+                    params: {
+                        year_a: yrA,
+                        year_b: yrB,
+                        ulp_id: ulpFilterVal,
+                        target_year: targetYear,
+                        dimension: dimension,
+                        key: key
+                    }
+                });
+            };
+            var cardBtnA = document.getElementById('btnEnsCardA');
+            var cardBtnB = document.getElementById('btnEnsCardB');
+            if (cardBtnA) cardBtnA.onclick = function() { triggerEnsDrilldown('ens_year', String(yrA), yrA, cardBtnA); };
+            if (cardBtnB) cardBtnB.onclick = function() { triggerEnsDrilldown('ens_year', String(yrB), yrB, cardBtnB); };
+
+            var ctxMo = document.getElementById('ensMonthlyComparisonChart');
+            var ovMo  = document.getElementById('ensMonthlyEmptyOverlay');
+            if (window.ensMonthlyChartInstance) {
+                window.ensMonthlyChartInstance.destroy();
+                window.ensMonthlyChartInstance = null;
+            }
+            var maxMo = Math.max(getArrayMax(arrA), getArrayMax(arrB));
+            var hasMo = (maxMo > 0 || totA > 0 || totB > 0);
+            if (ovMo) ovMo.classList.toggle('d-none', hasMo);
+            if (ctxMo) {
+                window.ensMonthlyChartInstance = new Chart(ctxMo, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'ENS ' + yrA + ' (Total: ' + fmtKwh(totA) + ' kWh)',
+                                data: arrA,
+                                backgroundColor: 'rgba(220, 38, 38, 0.85)',
+                                borderRadius: 4,
+                                borderWidth: 0
+                            },
+                            {
+                                label: 'ENS ' + yrB + ' (Total: ' + fmtKwh(totB) + ' kWh)',
+                                data: arrB,
+                                backgroundColor: 'rgba(2, 132, 199, 0.78)',
+                                borderRadius: 4,
+                                borderWidth: 0
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        onHover: function(evt, elems) {
+                            if (evt && evt.native && evt.native.target) {
+                                evt.native.target.style.cursor = (elems && elems.length) ? 'pointer' : 'default';
+                            }
+                        },
+                        onClick: function(evt, elems, chart) {
+                            var hits = (elems && elems.length) ? elems : chart.getElementsAtEventForMode(evt, 'index', { intersect: false }, true);
+                            if (!hits || !hits.length) return;
+                            var h = hits[0];
+                            var yrTgt = (h.datasetIndex === 1) ? yrB : yrA;
+                            triggerEnsDrilldown('ens_month', String(h.index + 1), yrTgt, ctxMo);
+                        },
+                        interaction: { mode: 'index', intersect: false },
+                        layout: { padding: { top: 8, right: 8 } },
+                        plugins: {
+                            legend: { position: 'top', align: 'end', labels: { boxWidth: 10, font: { size: 10, weight: '600' } } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(tc) {
+                                        if (tc.raw === null || typeof tc.raw === 'undefined') {
+                                            return tc.dataset.label.split(' (')[0] + ': Belum ada data';
+                                        }
+                                        return tc.dataset.label.split(' (')[0] + ': ' + fmtKwh(tc.raw) + ' kWh';
+                                    },
+                                    afterBody: function() { return ['Klik batang untuk melihat trip pembentuk ENS']; }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { font: { size: 10, weight: '600' } } },
+                            y: {
+                                beginAtZero: true,
+                                suggestedMax: maxMo > 0 ? Math.ceil(maxMo * 1.15) : 10,
+                                ticks: {
+                                    font: { size: 10 },
+                                    callback: function(v) {
+                                        if (v >= 1000) return (v / 1000).toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' rb';
+                                        return Number(v).toLocaleString('id-ID');
+                                    }
+                                },
+                                title: { display: true, text: 'ENS (kWh)', font: { size: 10, weight: 'bold' } },
+                                grid: { color: 'rgba(148, 163, 184, 0.16)' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            var ctxYr = document.getElementById('ensAnnualComparisonChart');
+            var ovYr  = document.getElementById('ensAnnualEmptyOverlay');
+            if (window.ensAnnualChartInstance) {
+                window.ensAnnualChartInstance.destroy();
+                window.ensAnnualChartInstance = null;
+            }
+            var hasYr = (totA > 0 || totB > 0);
+            if (ovYr) ovYr.classList.toggle('d-none', hasYr);
+            if (ctxYr) {
+                var maxAnn = Math.max(totA, totB);
+                window.ensAnnualChartInstance = new Chart(ctxYr, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Tahun ' + yrA, 'Tahun ' + yrB],
+                        datasets: [{
+                            label: 'Total ENS Tahunan (kWh)',
+                            data: [totA, totB],
+                            backgroundColor: ['rgba(220, 38, 38, 0.88)', 'rgba(2, 132, 199, 0.84)'],
+                            borderRadius: 6,
+                            maxBarThickness: 54
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        onHover: function(evt, elems) {
+                            if (evt && evt.native && evt.native.target) {
+                                evt.native.target.style.cursor = (elems && elems.length) ? 'pointer' : 'default';
+                            }
+                        },
+                        onClick: function(evt, elems, chart) {
+                            var hits = (elems && elems.length) ? elems : chart.getElementsAtEventForMode(evt, 'nearest', { intersect: false }, true);
+                            if (!hits || !hits.length) return;
+                            var yrTgt = (hits[0].index === 1) ? yrB : yrA;
+                            triggerEnsDrilldown('ens_year', String(yrTgt), yrTgt, ctxYr);
+                        },
+                        layout: { padding: { top: 10 } },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(tc) { return 'Total ENS: ' + fmtKwh(tc.raw) + ' kWh'; },
+                                    afterLabel: function() { return ['Klik batang untuk rincian trip tahun ini']; }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { font: { size: 10.5, weight: '700' } } },
+                            y: {
+                                beginAtZero: true,
+                                suggestedMax: maxAnn > 0 ? Math.ceil(maxAnn * 1.18) : 10,
+                                ticks: {
+                                    font: { size: 10 },
+                                    callback: function(v) {
+                                        if (v >= 1000) return (v / 1000).toLocaleString('id-ID', { maximumFractionDigits: 0 }) + ' rb';
+                                        return Number(v).toLocaleString('id-ID');
+                                    }
+                                },
+                                grid: { color: 'rgba(148, 163, 184, 0.16)' }
+                            }
+                        }
+                    }
+                });
+            }
+        } catch (eEns) {
+            console.warn('[Dashboard] updateEnsComparisonCharts error:', eEns);
+        }
+    };
 
     window.renderTopFeedersGangguanByYear = function(year) {
         var yr = String(year || '');
@@ -3199,14 +3491,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         var html = '';
         rows.forEach(function(row, rank) {
-            html += '<tr>' +
+            var fName = row.nama_penyulang || row.feeder_name || '-';
+            html += '<tr class="dash-top-feeder-row" data-feeder="' + escHtml(fName) + '" title="Klik untuk detail gangguan penyulang ' + escHtml(fName) + '">' +
                 '<td class="text-center text-muted fw-bold">' + (rank + 1) + '</td>' +
-                '<td class="fw-semibold text-dark">' + escHtml(row.nama_penyulang || row.feeder_name || '-') + '</td>' +
+                '<td class="fw-semibold text-dark">' + escHtml(fName) + '</td>' +
                 '<td class="text-muted small">' + escHtml(row.nama_ulp || '-') + '</td>' +
                 '<td class="text-end fw-bold text-danger font-monospace">' + Number(row.cnt || 0).toLocaleString('id-ID') + '</td>' +
             '</tr>';
         });
         tbody.innerHTML = html;
+        if (window.bindDashboardGangguanRows) window.bindDashboardGangguanRows();
     };
 
     window.onDashboardGangguanYearPairChange = function() {
@@ -3270,6 +3564,8 @@ document.addEventListener('DOMContentLoaded', function() {
             var chartType = 'line';
             var indexAxis = 'x';
             var currentCauseScores = [];
+            var currentRelayScores = [];
+            var currentDevKeys     = ['PMT', 'RECL-PMCB'];
 
         var yoyData = (window.yoyPayload && window.yoyPayload.yoy) ? window.yoyPayload.yoy : {};
         var entryA = yoyData[yrA] || null;
@@ -3348,8 +3644,13 @@ document.addEventListener('DOMContentLoaded', function() {
             var validB = dataB.filter(function(v) { return v !== null && !isNaN(v) && v > 0; });
             if (validA.length || validB.length) hasValidData = true;
 
-            var avgA = validA.length ? (validA.reduce(function(a, b) { return a + b; }, 0) / validA.length).toFixed(1) : null;
-            var avgB = validB.length ? (validB.reduce(function(a, b) { return a + b; }, 0) / validB.length).toFixed(1) : null;
+            var avgByYrMap = (window.yoyPayload && window.yoyPayload.fault_current_avg) ? window.yoyPayload.fault_current_avg : {};
+            var avgA = (typeof avgByYrMap[yrA] === 'number')
+                ? Number(avgByYrMap[yrA]).toFixed(1)
+                : (validA.length ? (validA.reduce(function(a, b) { return a + b; }, 0) / validA.length).toFixed(1) : null);
+            var avgB = (typeof avgByYrMap[yrB] === 'number')
+                ? Number(avgByYrMap[yrB]).toFixed(1)
+                : (validB.length ? (validB.reduce(function(a, b) { return a + b; }, 0) / validB.length).toFixed(1) : null);
 
             var badgeA = document.getElementById('badgeYearA');
             var badgeB = document.getElementById('badgeYearB');
@@ -3402,6 +3703,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             relayScores.sort(function(a, b) { return b.total - a.total; });
+            currentRelayScores = relayScores;
             labels = relayScores.map(function(s) { return s.type; });
             var barDataA = relayScores.map(function(s) { return s.sumA; });
             var barDataB = relayScores.map(function(s) { return s.sumB; });
@@ -3623,6 +3925,38 @@ document.addEventListener('DOMContentLoaded', function() {
                 indexAxis: indexAxis,
                 responsive: true,
                 maintainAspectRatio: false,
+                onHover: function(evt, elements) {
+                    if (evt && evt.native && evt.native.target) {
+                        evt.native.target.style.cursor = (elements && elements.length) ? 'pointer' : 'default';
+                    }
+                },
+                onClick: function(evt, elements, chart) {
+                    var hits = (elements && elements.length) ? elements : chart.getElementsAtEventForMode(evt, indexAxis === 'y' ? 'y' : 'index', { intersect: false }, true);
+                    if (!hits || !hits.length) return;
+                    var hit = hits[0];
+                    var yrTarget = (hit.datasetIndex === 1) ? yrB : yrA;
+                    var ctxEl = document.getElementById('cumulativeGangguanChart');
+                    var ulpFilterVal = <?= !empty($selectedUlpId) ? (int)$selectedUlpId : 'null' ?>;
+                    var sendDetail = function(dimension, key, extra) {
+                        if (!window.openGangguanDrilldown) return;
+                        window.openGangguanDrilldown({
+                            endpoint: '<?= site_url('gangguan/drilldown') ?>',
+                            triggerEl: ctxEl,
+                            params: Object.assign({ year_a: yrA, year_b: yrB, ulp_id: ulpFilterVal, target_year: yrTarget, dimension: dimension, key: key }, extra || {})
+                        });
+                    };
+                    if (metric === 'trips') {
+                        sendDetail('month', String(hit.index + 1));
+                    } else if (metric === 'current') {
+                        sendDetail('month', String(hit.index + 1), { metric_focus: 'current' });
+                    } else if (metric === 'cause' && currentCauseScores[hit.index]) {
+                        sendDetail('cause_category', currentCauseScores[hit.index].cat);
+                    } else if (metric === 'relay' && currentRelayScores[hit.index]) {
+                        sendDetail('relay', currentRelayScores[hit.index].type);
+                    } else if (metric === 'device' && currentDevKeys[hit.index]) {
+                        sendDetail('switching_type', currentDevKeys[hit.index]);
+                    }
+                },
                 interaction: {
                     mode: indexAxis === 'y' ? 'y' : 'index',
                     intersect: false
@@ -3659,6 +3993,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                 if (val === null || typeof val === 'undefined') return c.dataset.label + ': Tidak Ada Data';
                                 var u = metric === 'current' ? ' A' : ' kejadian';
                                 return c.dataset.label.split(' (')[0] + ': ' + Number(val).toLocaleString('id-ID') + u;
+                            },
+                            afterBody: function() {
+                                return ['Klik elemen grafik untuk melihat rincian kejadian'];
                             }
                         }
                     }
@@ -3710,6 +4047,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         } catch (eYoY) {
             console.warn('[Dashboard] updateYoYComparisonChart error:', eYoY);
+        }
+        if (window.updateEnsComparisonCharts) {
+            var sA = document.getElementById('yoyYearA');
+            var sB = document.getElementById('yoyYearB');
+            window.updateEnsComparisonCharts(
+                sA ? parseInt(sA.value, 10) : new Date().getFullYear(),
+                sB ? parseInt(sB.value, 10) : (new Date().getFullYear() - 1)
+            );
         }
     };
 
@@ -3891,7 +4236,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (rawStr.length > 75) rawStr = rawStr.slice(0, 72) + '...';
             var rawText = rawStr ? ' &bull; <span class="text-secondary">Contoh: ' + escHtml(rawStr) + '</span>' : '';
 
-            html += '<tr>' +
+            html += '<tr class="dash-cause-row" data-canonical="' + escHtml(cRow.canonical_code || '') + '" title="Klik untuk detail kejadian ' + escHtml(cRow.label || '') + '">' +
                 '<td class="text-center text-muted fw-bold">' + (idx + 1) + '</td>' +
                 '<td>' +
                     '<div class="fw-semibold text-dark">' + escHtml(cRow.label || '-') + '</div>' +
@@ -3903,7 +4248,44 @@ document.addEventListener('DOMContentLoaded', function() {
             '</tr>';
         });
         tbody.innerHTML = html;
+        if (window.bindDashboardGangguanRows) window.bindDashboardGangguanRows();
     };
+
+    window.bindDashboardGangguanRows = function() {
+        if (!window.bindAccessibleAction || !window.openGangguanDrilldown) return;
+        var ulpFilterVal = <?= !empty($selectedUlpId) ? (int)$selectedUlpId : 'null' ?>;
+        document.querySelectorAll('#topFeedersGangguanTableBody tr.dash-top-feeder-row').forEach(function(tr) {
+            if (tr.dataset.boundDrill === '1') return;
+            tr.dataset.boundDrill = '1';
+            var feederName = tr.getAttribute('data-feeder') || '';
+            if (!feederName || feederName === '-') return;
+            window.bindAccessibleAction(tr, function() {
+                var yrSel = document.getElementById('trendYearSelectGangguan');
+                var yr = yrSel ? parseInt(yrSel.value, 10) : (new Date().getFullYear());
+                window.openGangguanDrilldown({
+                    endpoint: '<?= site_url('gangguan/drilldown') ?>',
+                    triggerEl: tr,
+                    params: { dimension: 'feeder', key: feederName, year_a: yr, year_b: yr - 1, target_year: yr, ulp_id: ulpFilterVal }
+                });
+            });
+        });
+        document.querySelectorAll('#causeBreakdownTableBody tr.dash-cause-row').forEach(function(tr) {
+            if (tr.dataset.boundDrill === '1') return;
+            tr.dataset.boundDrill = '1';
+            var cCode = tr.getAttribute('data-canonical') || '';
+            if (!cCode || cCode === '-') return;
+            window.bindAccessibleAction(tr, function() {
+                var yrSel = document.getElementById('causeYearSelect');
+                var yr = yrSel ? parseInt(yrSel.value, 10) : (new Date().getFullYear());
+                window.openGangguanDrilldown({
+                    endpoint: '<?= site_url('gangguan/drilldown') ?>',
+                    triggerEl: tr,
+                    params: { dimension: 'canonical_cause', key: cCode, year_a: yr, year_b: yr - 1, target_year: yr, ulp_id: ulpFilterVal }
+                });
+            });
+        });
+    };
+    window.bindDashboardGangguanRows();
 
     // 7. Interactive Filter ULP & Penyulang for Ringkasan Jaringan & Aset Module
     window.applyNetworkModuleFilter = function() {

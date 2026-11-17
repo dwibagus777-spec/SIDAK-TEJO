@@ -217,10 +217,12 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
         body.sidak-mission-control .navbar-vertical.drawer-open {
             left: 0 !important;
         }
-        body.sidak-mission-control .page-wrapper {
-            margin-left: 0 !important;
-            width: 100% !important;
-            max-width: 100% !important;
+        @media (max-width: 991.98px) {
+            body.sidak-mission-control .page-wrapper {
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
         }
 
         /* Mission Control Collapsed Rail Mode (~68px) - default on first login */
@@ -230,7 +232,7 @@ $combinedJs = \App\Libraries\AssetMinifier::js($jsFiles);
                 width: 68px !important;
                 box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1) !important;
             }
-            body.sidak-mission-control.sidebar-collapsed .page-wrapper {
+            body.sidak-mission-control.sidebar-collapsed.workspace-collapsed .page-wrapper {
                 margin-left: 68px !important;
                 width: calc(100% - 68px) !important;
                 max-width: calc(100% - 68px) !important;
@@ -1668,10 +1670,13 @@ body.workspace-collapsed .sidak-workspace-panel {
 @media (min-width: 992px) {
     .page-wrapper {
         margin-left: 344px !important;
+        max-width: calc(100% - 344px) !important;
+        overflow-x: clip;
         transition: margin-left 0.25s ease;
     }
     body.workspace-collapsed .page-wrapper {
         margin-left: 64px !important;
+        max-width: calc(100% - 64px) !important;
     }
 }
 
@@ -4934,7 +4939,7 @@ $archivedCount = count(array_filter($authorizedMenuItems, fn($m) => !$m['inRail'
             width: 68px !important;
             left: 0 !important;
         }
-        body.sidak-mission-control .page-wrapper {
+        body.sidak-mission-control.workspace-collapsed .page-wrapper {
             margin-left: 68px !important;
             transition: margin-left .25s ease;
         }

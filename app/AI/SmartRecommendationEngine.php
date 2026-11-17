@@ -47,8 +47,8 @@ class SmartRecommendationEngine
             $team = 'HAR ROW';
         } elseif (str_contains($jenis, 'hotspot') || str_contains($jenis, 'thermovision')) {
             $team = 'TIM PDKB SPECIALIST';
-        } elseif (str_contains($jenis, 'gardu') || str_contains($jenis, 'trafo')) {
-            $team = 'HAR GARDU';
+        } elseif (str_contains($jenis, 'gardu') || str_contains($jenis, 'gtt') || str_contains($jenis, 'trafo')) {
+            $team = 'HAR GTT';
         }
 
         // 4. Digital Checklist Tasks

@@ -211,6 +211,9 @@ class TemuanService
         $session = session();
         $data['nomor_temuan'] = $nomorTemuan;
         $data['status'] = 'BELUM';
+        if (array_key_exists('pelaksana', $data) && function_exists('normalize_pelaksana_label')) {
+            $data['pelaksana'] = normalize_pelaksana_label((string)$data['pelaksana'], 'YANTEK');
+        }
 
         $rawUserId = $session->get('user_id');
         $data['created_by'] = (!empty($rawUserId) && is_numeric($rawUserId)) ? (int)$rawUserId : null;
@@ -329,6 +332,9 @@ class TemuanService
         }
 
         $session = session();
+        if (array_key_exists('pelaksana', $data) && function_exists('normalize_pelaksana_label')) {
+            $data['pelaksana'] = normalize_pelaksana_label((string)$data['pelaksana'], 'YANTEK');
+        }
         $rawUpdateUserId = $session->get('user_id');
         $data['updated_by'] = (!empty($rawUpdateUserId) && is_numeric($rawUpdateUserId)) ? (int)$rawUpdateUserId : null;
 

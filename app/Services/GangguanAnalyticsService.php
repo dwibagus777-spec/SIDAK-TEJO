@@ -299,6 +299,9 @@ class GangguanAnalyticsService
         // Item 12: Detail bulanan gangguan PMT, Recloser, PMCB, dan Key Point
         $detailBulananPeralatan = $this->buildEquipmentMonthlyPivot($rowsFocus);
 
+        // ENS (kWh) Reliability Analysis
+        $ensAnalysis = $this->buildEnsComparison($rowsA, $rowsB, $rowsFocus, $yearA, $yearB, $scope, $focusLabel);
+
         return [
             'focus_label'                  => $focusLabel,
             'scope'                        => $scope,
@@ -314,6 +317,7 @@ class GangguanAnalyticsService
             'detail_penyulang_bulanan'     => $detailPenyulangBulanan,
             'penyulang_vs_penyebab'        => $penyulangVsPenyebab,
             'detail_bulanan_peralatan'     => $detailBulananPeralatan,
+            'ens_analysis'                 => $ensAnalysis,
             'filtered_rows'                => $scopedRows,
         ];
     }
@@ -347,9 +351,12 @@ class GangguanAnalyticsService
 
         $cumulativeGangguanYoY     = [];
         $monthlyFaultCurrentByYear = [];
+        $faultCurrentAvgByYear     = [];
         $monthlyRelayByYear        = [];
         $monthlyCauseByYear        = [];
         $monthlyDeviceByYear       = [];
+        $monthlyEnsByYear          = [];
+        $annualEnsByYear           = [];
         $topFeedersByYear          = [];
 
         foreach ($availableYears as $yr) {
@@ -358,6 +365,17 @@ class GangguanAnalyticsService
             if (empty($yrRows) && $yr !== (int)date('Y')) {
                 continue;
             }
+
+            $ensSumYr = $this->summarizeEnsByMonth($yrRows);
+            $monthlyEnsByYear[$yr] = $ensSumYr['monthly'];
+            $annualEnsByYear[$yr]  = [
+                'year'         => $yr,
+                'total_kwh'    => $ensSumYr['total_kwh'],
+                'valid_events' => $ensSumYr['valid_events'],
+                'total_events' => $ensSumYr['total_events'],
+                'max_month'    => $ensSumYr['max_month'],
+                'avg_per_trip' => $ensSumYr['avg_per_trip'],
+            ];
 
             $moCounts = $this->countMonthly($yrRows);
             $maxMo = 0;
@@ -401,6 +419,9 @@ class GangguanAnalyticsService
                 $currAvgs[] = $currCnt[$m] > 0 ? round($currSum[$m] / $currCnt[$m], 1) : null;
             }
             $monthlyFaultCurrentByYear[$yr] = $currAvgs;
+            $yrAmpSum = array_sum($currSum);
+            $yrAmpCnt = array_sum($currCnt);
+            $faultCurrentAvgByYear[$yr] = $yrAmpCnt > 0 ? round($yrAmpSum / $yrAmpCnt, 1) : null;
 
             // Relay, Cause Category, Device Type
             foreach ($yrRows as $r) {
@@ -431,12 +452,16 @@ class GangguanAnalyticsService
         krsort($cumulativeGangguanYoY);
 
         $interruptionMetricsPayload = [
-            'yoy'           => $cumulativeGangguanYoY,
-            'fault_current' => $monthlyFaultCurrentByYear,
-            'relay'         => $monthlyRelayByYear,
-            'cause'         => $monthlyCauseByYear,
-            'device'        => $monthlyDeviceByYear,
-            'years'         => array_values($availableYears),
+            'yoy'               => $cumulativeGangguanYoY,
+            'fault_current'     => $monthlyFaultCurrentByYear,
+            'fault_current_avg' => $faultCurrentAvgByYear,
+            'ens_monthly'       => $monthlyEnsByYear,
+            'ens_annual'        => $annualEnsByYear,
+            'ens_meta'          => $this->getEnsFormulaMeta(),
+            'relay'             => $monthlyRelayByYear,
+            'cause'             => $monthlyCauseByYear,
+            'device'            => $monthlyDeviceByYear,
+            'years'             => array_values($availableYears),
         ];
 
         $causeBreakdownByYear = $this->buildDashboardCauseBreakdown($rows, $allTrendYears, $availableYears);
@@ -450,6 +475,140 @@ class GangguanAnalyticsService
             'causeBreakdownByYear'       => $causeBreakdownByYear,
             'topFeedersGangguan'         => $topFeedersByYear[$yearA] ?? [],
             'topFeedersGangguanByYear'   => $topFeedersByYear,
+        ];
+    }
+
+    /**
+     * Authoritative definition & formula metadata for Energy Not Supplied (ENS).
+     * Mirrors spreadsheet `DATA_GANGGUAN` column `( Kwh )` (`energy_not_supplied_kwh`).
+     */
+    public function getEnsFormulaMeta(): array
+    {
+        return [
+            'source_column' => '( Kwh )',
+            'db_field'      => 'energy_not_supplied_kwh',
+            'unit'          => 'kWh',
+            'formula_text'  => '√3 × 20 kV × Arus Gangguan (A) × 0,85 × Lama Padam (jam)',
+        ];
+    }
+
+    /**
+     * Summarize monthly and annual ENS (kWh) from normalized interruption rows.
+     * Monthly totals are rounded to 2 decimals; annual total equals exact sum of monthly bars.
+     */
+    protected function summarizeEnsByMonth(array $rows): array
+    {
+        $moSums   = array_fill(1, 12, 0.0);
+        $moCounts = array_fill(1, 12, 0);
+        $validCnt = 0;
+        $maxMo    = 0;
+
+        foreach ($rows as $r) {
+            $mo = (int)($r['month'] ?? 0);
+            if ($mo < 1 || $mo > 12) {
+                continue;
+            }
+            if ($mo > $maxMo) {
+                $maxMo = $mo;
+            }
+            $kwh = $r['energy_not_supplied_kwh'] ?? null;
+            if ($kwh !== null) {
+                $moSums[$mo] += max(0.0, (float)$kwh);
+                $moCounts[$mo]++;
+                $validCnt++;
+            }
+        }
+
+        $monthly = [];
+        $annual  = 0.0;
+        for ($m = 1; $m <= 12; $m++) {
+            if ($m <= $maxMo) {
+                $rounded   = round($moSums[$m], 2);
+                $monthly[] = $rounded;
+                $annual   += $rounded;
+            } else {
+                $monthly[] = null;
+            }
+        }
+
+        $annual = round($annual, 2);
+        $totalEvents = count($rows);
+
+        return [
+            'monthly'      => $monthly,
+            'monthly_cnt'  => array_values($moCounts),
+            'total_kwh'    => $annual,
+            'valid_events' => $validCnt,
+            'total_events' => $totalEvents,
+            'max_month'    => $maxMo,
+            'avg_per_trip' => $totalEvents > 0 ? round($annual / $totalEvents, 2) : 0.0,
+        ];
+    }
+
+    /**
+     * Build two-year & active-scope ENS (kWh) monthly + annual comparison payload.
+     */
+    protected function buildEnsComparison(
+        array $rowsA,
+        array $rowsB,
+        array $rowsFocus,
+        int $yearA,
+        int $yearB,
+        string $scope,
+        string $focusLabel
+    ): array {
+        $sumA     = $this->summarizeEnsByMonth($rowsA);
+        $sumB     = $this->summarizeEnsByMonth($rowsB);
+        $sumFocus = $this->summarizeEnsByMonth($rowsFocus);
+
+        $effMaxA = $sumA['max_month'] > 0 ? $sumA['max_month'] : 12;
+        $effMaxB = $sumB['max_month'] > 0 ? $sumB['max_month'] : 12;
+        $compMo  = min($effMaxA, $effMaxB);
+
+        $compA = 0.0;
+        $compB = 0.0;
+        for ($i = 0; $i < $compMo; $i++) {
+            $compA += (float)($sumA['monthly'][$i] ?? 0.0);
+            $compB += (float)($sumB['monthly'][$i] ?? 0.0);
+        }
+        $compA    = round($compA, 2);
+        $compB    = round($compB, 2);
+        $compDiff = round($compA - $compB, 2);
+        $compPct  = $compB > 0 ? round(($compDiff / $compB) * 100, 1) : null;
+
+        $fullDiff = round($sumA['total_kwh'] - $sumB['total_kwh'], 2);
+        $fullPct  = $sumB['total_kwh'] > 0 ? round(($fullDiff / $sumB['total_kwh']) * 100, 1) : null;
+        $combTot  = ($yearA === $yearB) ? $sumA['total_kwh'] : round($sumA['total_kwh'] + $sumB['total_kwh'], 2);
+
+        return [
+            'year_a'             => $yearA,
+            'year_b'             => $yearB,
+            'scope'              => $scope,
+            'focus_label'        => $focusLabel,
+            'monthly_a'          => $sumA['monthly'],
+            'monthly_b'          => $sumB['monthly'],
+            'monthly_focus'      => $sumFocus['monthly'],
+            'total_a'            => $sumA['total_kwh'],
+            'total_b'            => $sumB['total_kwh'],
+            'total_focus'        => $sumFocus['total_kwh'],
+            'combined_total'     => $combTot,
+            'valid_a'            => $sumA['valid_events'],
+            'valid_b'            => $sumB['valid_events'],
+            'valid_focus'        => $sumFocus['valid_events'],
+            'count_a'            => $sumA['total_events'],
+            'count_b'            => $sumB['total_events'],
+            'count_focus'        => $sumFocus['total_events'],
+            'avg_a'              => $sumA['avg_per_trip'],
+            'avg_b'              => $sumB['avg_per_trip'],
+            'full_diff'          => $fullDiff,
+            'full_pct'           => $fullPct,
+            'comparable_months'  => $compMo,
+            'comparable_period'  => 'Jan–' . self::MONTH_LABELS[max(0, min(11, $compMo - 1))],
+            'comparable_a'       => $compA,
+            'comparable_b'       => $compB,
+            'comparable_diff'    => $compDiff,
+            'comparable_pct'     => $compPct,
+            'meta'               => $this->getEnsFormulaMeta(),
         ];
     }
 
@@ -540,20 +699,20 @@ class GangguanAnalyticsService
                 continue;
             }
 
-            $rawUlp    = strtoupper(trim(str_ireplace('ULP', '', (string)($r['ulp_name'] ?? ''))));
+            $rawUlp    = strtoupper(preg_replace('/\s+/', ' ', trim(str_ireplace('ULP', '', (string)($r['ulp_name'] ?? '')))) ?? '');
             $ulpId     = !empty($r['ulp_id']) ? (int)$r['ulp_id'] : ($ulps['by_clean'][$rawUlp]['id'] ?? null);
             $dispUlp   = $ulpId && isset($ulps['by_id'][$ulpId])
                 ? $ulps['by_id'][$ulpId]['clean_name']
                 : ($rawUlp !== '' ? $rawUlp : 'TIDAK TERCATAT');
 
-            $rawFeeder  = strtoupper(trim((string)($r['feeder_name'] ?? '')));
+            $rawFeeder  = strtoupper(preg_replace('/\s+/', ' ', trim((string)($r['feeder_name'] ?? ''))) ?? '');
             $fMatch     = $feeders['by_name'][$rawFeeder] ?? null;
             $pid        = !empty($r['penyulang_id']) ? (int)$r['penyulang_id'] : ($fMatch['id'] ?? null);
             $dispFeeder = $fMatch['nama_penyulang'] ?? ($rawFeeder !== '' ? $rawFeeder : 'TIDAK TERCATAT');
 
-            $devTypeRaw = strtoupper(trim((string)($r['switching_device_type'] ?? '')));
+            $devTypeRaw = strtoupper(preg_replace('/\s+/', ' ', trim((string)($r['switching_device_type'] ?? ''))) ?? '');
             $devType    = $devTypeRaw !== '' ? $devTypeRaw : 'RECL-PMCB';
-            $devName    = strtoupper(trim((string)($r['device_name'] ?? '')));
+            $devName    = strtoupper(preg_replace('/\s+/', ' ', trim((string)($r['device_name'] ?? ''))) ?? '');
             $family     = self::classifyEquipmentFamily($devName, $devType);
             $devLabel   = $devName !== '' ? $devName : ($devType === 'PMT' ? 'PMT' : '(Kosong)');
 
@@ -566,12 +725,12 @@ class GangguanAnalyticsService
                 $cat = 'UNKNOWN';
             }
 
-            $relayRaw   = strtoupper(trim((string)($r['relay_trip_type'] ?? '')));
+            $relayRaw   = strtoupper(preg_replace('/\s+/', ' ', trim((string)($r['relay_trip_type'] ?? ''))) ?? '');
             $relayLabel = $relayRaw !== '' ? $relayRaw : 'TIDAK TERCATAT';
 
-            $causeRaw = strtoupper(trim((string)($r['cause_raw'] ?? '')));
+            $causeRaw = strtoupper(preg_replace('/\s+/', ' ', trim((string)($r['cause_raw'] ?? ''))) ?? '');
             if ($causeRaw === '') {
-                $causeRaw = 'BELUM DIKETEMUKAN';
+                $causeRaw = 'TIDAK TERCATAT';
             }
 
             $cCode = trim((string)($r['cause_canonical_code'] ?? ''));
@@ -969,21 +1128,47 @@ class GangguanAnalyticsService
         $items = array_values($grouped);
         usort($items, static fn(array $a, array $b): int => $b['count'] <=> $a['count'] ?: strcmp($a['cause_raw'], $b['cause_raw']));
 
-        $total = (int)array_sum(array_column($items, 'count'));
-        $running = 0;
-        foreach ($items as &$item) {
-            $prevPct = $total > 0 ? ($running / $total) * 100.0 : 0.0;
+        $total        = (int)array_sum(array_column($items, 'count'));
+        $running      = 0;
+        $sumPct       = 0.0;
+        $vitalCount   = 0;
+        $vitalEvents  = 0;
+        $vitalLastPct = 0.0;
+
+        foreach ($items as $idx => &$item) {
+            // Exact integer cross-multiplication avoids IEEE-754 drift at 80.0% cutoff
+            $isVital = $total > 0 && (($running * 100) < ($total * 80));
             $running += $item['count'];
-            $item['pct']              = $total > 0 ? round(($item['count'] / $total) * 100, 1) : 0.0;
+            $pct      = $total > 0 ? round(($item['count'] / $total) * 100, 1) : 0.0;
+            $cumPct   = $total > 0 ? min(100.0, round(($running / $total) * 100, 1)) : 0.0;
+            $sumPct   = round($sumPct + $pct, 1);
+
+            $item['rank']             = $idx + 1;
+            $item['pct']              = $pct;
             $item['cumulative_count'] = $running;
-            $item['cumulative_pct']   = $total > 0 ? min(100.0, round(($running / $total) * 100, 1)) : 0.0;
-            $item['is_vital_80']      = ($prevPct < 80.0);
+            $item['cumulative_pct']   = $cumPct;
+            $item['is_vital_80']      = $isVital;
+
+            if ($isVital) {
+                $vitalCount++;
+                $vitalEvents  = $running;
+                $vitalLastPct = $cumPct;
+            }
         }
         unset($item);
 
+        $finalCum = !empty($items) ? end($items)['cumulative_pct'] : 0.0;
+
         return [
-            'total' => $total,
-            'items' => $items,
+            'total'                => $total,
+            'category_count'       => count($items),
+            'sum_pct'              => $sumPct,
+            'final_cumulative_pct' => $finalCum,
+            'vital_80_count'       => $vitalCount,
+            'vital_80_events'      => $vitalEvents,
+            'vital_80_pct'         => $vitalLastPct,
+            'threshold_pct'        => 80.0,
+            'items'                => $items,
         ];
     }
 
@@ -1338,5 +1523,342 @@ class GangguanAnalyticsService
         }
         $this->feederCatalogCache = ['by_id' => $byId, 'by_name' => $byName];
         return $this->feederCatalogCache;
+    }
+
+    /**
+     * Unified drill-down details endpoint shared by all `/gangguan` and `/dashboard` charts.
+     * Strictly uses the same filtered row pool and field definitions as the charts themselves.
+     */
+    public function getDrilldownDetails(array $ctx, string $dimension, string $key, array $extra = []): array
+    {
+        $yearA = (int)$ctx['year_a'];
+        $yearB = (int)$ctx['year_b'];
+        $scope = (string)($ctx['scope'] ?? 'year_a');
+        $ulpId = $ctx['ulp_id'];
+        $pid   = $ctx['penyulang_id'];
+
+        $scopedRows = $this->filterRows(
+            $this->loadAllNormalizedRows(),
+            $ulpId,
+            $pid,
+            $ctx['month'] ?? null,
+            $ctx['category'] ?? null,
+            $ctx['relay'] ?? null,
+            $ctx['cause'] ?? null
+        );
+
+        $targetYear = !empty($extra['target_year']) ? (int)$extra['target_year'] : null;
+        if ($targetYear !== null && $targetYear > 0) {
+            $yearPoolRows = array_values(array_filter($scopedRows, static fn(array $r): bool => $r['year'] === $targetYear));
+            $yearLabel    = 'Tahun ' . $targetYear;
+        } elseif ($scope === 'year_b') {
+            $yearPoolRows = array_values(array_filter($scopedRows, static fn(array $r): bool => $r['year'] === $yearB));
+            $yearLabel    = 'Tahun ' . $yearB;
+        } elseif ($scope === 'combined') {
+            $yearPoolRows = array_values(array_filter($scopedRows, static fn(array $r): bool => $r['year'] === $yearA || $r['year'] === $yearB));
+            $yearLabel    = ($yearA === $yearB) ? ('Tahun ' . $yearA) : ("Gabungan {$yearA} & {$yearB}");
+        } else {
+            $yearPoolRows = array_values(array_filter($scopedRows, static fn(array $r): bool => $r['year'] === $yearA));
+            $yearLabel    = 'Tahun ' . $yearA;
+        }
+
+        $totalScope     = count($yearPoolRows);
+        $dimUpper       = strtolower(trim($dimension));
+        $keyUpper       = strtoupper(preg_replace('/\s+/', ' ', trim($key)) ?? '');
+        $subKey         = trim((string)($extra['sub_key'] ?? ''));
+        $limit          = max(10, min(200, (int)($extra['limit'] ?? 100)));
+        $paretoSequence = [];
+        $paretoPoint    = null;
+        $title          = 'Detail Gangguan';
+        $subtitle       = $yearLabel;
+
+        $matchingRows = [];
+
+        switch ($dimUpper) {
+            case 'category':
+                $catTarget = match ($keyUpper) {
+                    'TEMPORER', 'TEMPORARY' => 'TEMPORARY',
+                    'PERMANEN', 'PERMANENT' => 'PERMANENT',
+                    default => $keyUpper,
+                };
+                $matchingRows = array_values(array_filter($yearPoolRows, static fn(array $r): bool => $r['interruption_category'] === $catTarget));
+                $title        = 'Kategori: ' . ($catTarget === 'TEMPORARY' ? 'Temporer' : ($catTarget === 'PERMANENT' ? 'Permanen' : $catTarget));
+                $subtitle     = "Distribusi berdasarkan kolom KATEGORI • {$yearLabel}";
+                break;
+
+            case 'ulp':
+                $matchingRows = array_values(array_filter($yearPoolRows, static fn(array $r): bool => strtoupper($r['ulp_name']) === $keyUpper));
+                $title        = 'ULP ' . $keyUpper;
+                $subtitle     = "Rincian kejadian berdasarkan kolom ULP • {$yearLabel}";
+                break;
+
+            case 'ulp_category':
+                $parts     = explode('|', $key, 2);
+                $ulpTarget = strtoupper(preg_replace('/\s+/', ' ', trim($parts[0] ?? '')) ?? '');
+                $catPart   = strtoupper(trim($parts[1] ?? $subKey));
+                $catTarget = ($catPart === 'TEMPORER' || $catPart === 'TEMPORARY') ? 'TEMPORARY' : (($catPart === 'PERMANEN' || $catPart === 'PERMANENT') ? 'PERMANENT' : $catPart);
+                $matchingRows = array_values(array_filter(
+                    $yearPoolRows,
+                    static fn(array $r): bool => strtoupper($r['ulp_name']) === $ulpTarget && $r['interruption_category'] === $catTarget
+                ));
+                $catLabel = $catTarget === 'TEMPORARY' ? 'Temporer' : ($catTarget === 'PERMANENT' ? 'Permanen' : $catTarget);
+                $title    = "ULP {$ulpTarget} — {$catLabel}";
+                $subtitle = "Irisan ULP x Kategori • {$yearLabel}";
+                break;
+
+            case 'relay':
+                $matchingRows = array_values(array_filter($yearPoolRows, static fn(array $r): bool => strtoupper($r['relay_label']) === $keyUpper));
+                $title        = 'Relai Proteksi: ' . $keyUpper;
+                $subtitle     = "Rincian kerja proteksi (RELE KERJA) • {$yearLabel}";
+                break;
+
+            case 'switching_type':
+                $typeTarget = ($keyUpper === 'PMT' || str_contains($keyUpper, 'PMT (GARDU INDUK)')) ? 'PMT' : ((str_contains($keyUpper, 'RECL')) ? 'RECL-PMCB' : $keyUpper);
+                $matchingRows = array_values(array_filter($yearPoolRows, static fn(array $r): bool => strtoupper($r['switching_device_type']) === $typeTarget));
+                $title        = $typeTarget === 'PMT' ? 'Peralatan PMT (Gardu Induk)' : 'Peralatan REC / PMCB (Jaringan JTM)';
+                $subtitle     = "Rasio peralatan switching (PMT-RECL/PMCB) • {$yearLabel}";
+                break;
+
+            case 'month':
+                $mo = max(1, min(12, (int)$key));
+                $matchingRows = array_values(array_filter($yearPoolRows, static fn(array $r): bool => $r['month'] === $mo));
+                $moName   = self::MONTH_LABELS[$mo - 1] ?? ('Bulan ' . $mo);
+                $title    = "Bulan {$moName} ({$yearLabel})";
+                $subtitle = (($extra['metric_focus'] ?? '') === 'current')
+                    ? "Rincian arus gangguan & kejadian trip bulan {$moName} • {$yearLabel}"
+                    : "Distribusi kejadian trip bulan {$moName} • {$yearLabel}";
+                break;
+
+            case 'pareto_cause':
+                $matchingRows = array_values(array_filter($yearPoolRows, static fn(array $r): bool => strtoupper($r['cause_raw']) === $keyUpper));
+                $pareto       = $this->buildParetoCauses($yearPoolRows);
+                foreach ($pareto['items'] as $pItem) {
+                    if (strtoupper($pItem['cause_raw']) === $keyUpper) {
+                        $paretoPoint = $pItem;
+                        break;
+                    }
+                }
+                $title    = 'Pareto Penyebab: ' . $keyUpper;
+                $subtitle = $paretoPoint
+                    ? sprintf(
+                        'Peringkat #%d dari %d • %s • Kumulatif %s%% (%s)',
+                        $paretoPoint['rank'],
+                        $pareto['category_count'],
+                        $paretoPoint['category_label'],
+                        number_format($paretoPoint['cumulative_pct'], 1),
+                        $paretoPoint['is_vital_80'] ? '80% Vital Few' : 'Tail 20%'
+                    )
+                    : "Kode sumber PENYEBAB SESUAI KODE GANGGUAN • {$yearLabel}";
+                break;
+
+            case 'pareto_cumulative':
+                $pareto = $this->buildParetoCauses($yearPoolRows);
+                $items  = $pareto['items'];
+                $rank   = (int)($extra['rank'] ?? (is_numeric($key) ? (int)$key : 0));
+                if ($rank <= 0) {
+                    foreach ($items as $pItem) {
+                        if (strtoupper($pItem['cause_raw']) === $keyUpper) {
+                            $rank = (int)$pItem['rank'];
+                            break;
+                        }
+                    }
+                }
+                $rank = max(1, min(count($items), $rank));
+                $paretoSequence = array_slice($items, 0, $rank);
+                $paretoPoint    = $paretoSequence[$rank - 1] ?? null;
+                $allowedCauses  = array_flip(array_map(static fn(array $it): string => strtoupper($it['cause_raw']), $paretoSequence));
+                $matchingRows   = array_values(array_filter($yearPoolRows, static fn(array $r): bool => isset($allowedCauses[strtoupper($r['cause_raw'])])));
+                $title          = $paretoPoint
+                    ? "Titik Kumulatif Pareto #{$rank}: {$paretoPoint['cause_raw']}"
+                    : "Titik Kumulatif Pareto #{$rank}";
+                $subtitle = $paretoPoint
+                    ? sprintf(
+                        'Kumulatif %d dari %d kategori = %d / %d kejadian (%.1f%%) • %s',
+                        $rank,
+                        $pareto['category_count'],
+                        $paretoPoint['cumulative_count'],
+                        $totalScope,
+                        $paretoPoint['cumulative_pct'],
+                        $paretoPoint['is_vital_80'] ? 'Masuk zona Vital <= 80%' : 'Setelah ambang batas 80%'
+                    )
+                    : "Urutan akumulasi Pareto • {$yearLabel}";
+                break;
+
+            case 'feeder':
+                $matchingRows = array_values(array_filter($yearPoolRows, static fn(array $r): bool => strtoupper($r['feeder_name']) === $keyUpper));
+                $title        = 'Penyulang: ' . $keyUpper;
+                $subtitle     = "Rincian gangguan penyulang (PENYULANG) • {$yearLabel}";
+                break;
+
+            case 'device':
+                $famUpper = strtoupper($subKey);
+                $matchingRows = array_values(array_filter(
+                    $yearPoolRows,
+                    static fn(array $r): bool => strtoupper($r['device_label']) === $keyUpper && ($famUpper === '' || strtoupper($r['equipment_family']) === $famUpper)
+                ));
+                $title    = 'Peralatan: ' . $keyUpper;
+                $subtitle = ($famUpper !== '' ? "Famili {$famUpper} • " : '') . "Titik peralatan switching (RECLOSER) • {$yearLabel}";
+                break;
+
+            case 'cause_category':
+                $matchingRows = array_values(array_filter(
+                    $yearPoolRows,
+                    static fn(array $r): bool => strtoupper($r['cause_category'] ?: 'UNKNOWN_INVESTIGATION') === $keyUpper
+                ));
+                $title    = 'Kategori Kanonik: ' . $keyUpper;
+                $subtitle = "Kelompok kode penyebab gangguan terpetakan • {$yearLabel}";
+                break;
+
+            case 'canonical_cause':
+                $matchingRows = array_values(array_filter(
+                    $yearPoolRows,
+                    static fn(array $r): bool => strtoupper($r['cause_canonical_code']) === $keyUpper
+                ));
+                $meta     = self::CANONICAL_CAUSE_META[$keyUpper] ?? null;
+                $title    = $meta ? $meta['label'] : $keyUpper;
+                $subtitle = "Kode kanonik {$keyUpper} • {$yearLabel}";
+                break;
+
+            case 'ens_month':
+                $mo           = max(1, min(12, (int)$key));
+                $matchingRows = array_values(array_filter($yearPoolRows, static fn(array $r): bool => $r['month'] === $mo));
+                usort($matchingRows, static function (array $a, array $b): int {
+                    $cmp = ((float)($b['energy_not_supplied_kwh'] ?? 0) <=> (float)($a['energy_not_supplied_kwh'] ?? 0));
+                    return $cmp !== 0 ? $cmp : strcmp((string)$b['interruption_started_at'], (string)$a['interruption_started_at']);
+                });
+                $moName   = self::MONTH_LABELS[$mo - 1] ?? ('Bulan ' . $mo);
+                $moKwh    = round(array_sum(array_map(static fn(array $r): float => (float)($r['energy_not_supplied_kwh'] ?? 0), $matchingRows)), 2);
+                $title    = "ENS (kWh) Bulan {$moName} ({$yearLabel})";
+                $subtitle = 'Total ENS: ' . number_format($moKwh, 2, ',', '.') . ' kWh dari ' . count($matchingRows) . ' trip • Kolom ( Kwh ): √3 × 20 kV × I × 0,85 × jam';
+                break;
+
+            case 'ens_year':
+                if ($keyUpper === 'COMBINED' || $keyUpper === 'GABUNGAN') {
+                    $matchingRows = array_values(array_filter(
+                        $scopedRows,
+                        static fn(array $r): bool => $r['year'] === $yearA || $r['year'] === $yearB
+                    ));
+                    $yrLabel = ($yearA === $yearB) ? "Tahun {$yearA}" : "Gabungan {$yearA} & {$yearB}";
+                } else {
+                    $yrTarget     = is_numeric($key) && (int)$key > 0 ? (int)$key : ($targetYear ?: $yearA);
+                    $matchingRows = array_values(array_filter($scopedRows, static fn(array $r): bool => $r['year'] === $yrTarget));
+                    $yrLabel      = "Tahun {$yrTarget}";
+                }
+                $totalScope = count($matchingRows);
+                usort($matchingRows, static function (array $a, array $b): int {
+                    $cmp = ((float)($b['energy_not_supplied_kwh'] ?? 0) <=> (float)($a['energy_not_supplied_kwh'] ?? 0));
+                    return $cmp !== 0 ? $cmp : strcmp((string)$b['interruption_started_at'], (string)$a['interruption_started_at']);
+                });
+                $yrKwh    = round(array_sum(array_map(static fn(array $r): float => (float)($r['energy_not_supplied_kwh'] ?? 0), $matchingRows)), 2);
+                $title    = "Total ENS (kWh) — {$yrLabel}";
+                $subtitle = 'Total ENS: ' . number_format($yrKwh, 2, ',', '.') . ' kWh dari ' . count($matchingRows) . ' trip • Urutan penyumbang kWh terbesar • Kolom ( Kwh )';
+                break;
+        }
+
+        $totalMatching = count($matchingRows);
+        $sharePct      = $totalScope > 0 ? round(($totalMatching / $totalScope) * 100, 1) : 0.0;
+
+        $ampValues = [];
+        $kwhSum    = 0.0;
+        foreach ($matchingRows as $mr) {
+            if ($mr['fault_current_amperes'] !== null && $mr['fault_current_amperes'] > 0) {
+                $ampValues[] = (float)$mr['fault_current_amperes'];
+            }
+            if ($mr['energy_not_supplied_kwh'] !== null) {
+                $kwhSum += (float)$mr['energy_not_supplied_kwh'];
+            }
+        }
+
+        $events = array_map(static function (array $r): array {
+            return [
+                'event_date'              => $r['event_date'],
+                'interruption_started_at' => $r['interruption_started_at'],
+                'outage_duration_minutes' => $r['outage_duration_minutes'],
+                'ulp_name'                => $r['ulp_name'],
+                'feeder_name'             => $r['feeder_name'],
+                'device_label'            => $r['device_label'],
+                'equipment_family'        => $r['equipment_family'],
+                'switching_device_type'   => $r['switching_device_type'],
+                'relay_label'             => $r['relay_label'],
+                'interruption_category'   => $r['interruption_category'],
+                'fault_current_amperes'   => $r['fault_current_amperes'],
+                'energy_not_supplied_kwh' => $r['energy_not_supplied_kwh'],
+                'cause_raw'               => $r['cause_raw'],
+                'cause_canonical_code'    => $r['cause_canonical_code'],
+                'field_narrative_raw'     => $r['field_narrative_raw'],
+                'source_system'           => $r['source_system'],
+            ];
+        }, array_slice($matchingRows, 0, $limit));
+
+        $activeUlpName = 'Semua ULP';
+        if ($ulpId !== null) {
+            $ulps = $this->getUlpCatalog();
+            $activeUlpName = $ulps['by_id'][$ulpId]['nama_ulp'] ?? ('ULP #' . $ulpId);
+        }
+
+        $activeFeederName = 'Semua Penyulang';
+        if ($pid !== null) {
+            $feeders = $this->getFeederCatalog();
+            $activeFeederName = $feeders['by_id'][$pid]['nama_penyulang'] ?? ('Penyulang #' . $pid);
+        }
+
+        return [
+            'dimension'       => $dimUpper,
+            'key'             => $key,
+            'title'           => $title,
+            'subtitle'        => $subtitle,
+            'total_matching'  => $totalMatching,
+            'total_scope'     => $totalScope,
+            'share_pct'       => $sharePct,
+            'events_returned' => count($events),
+            'events_capped'   => $totalMatching > $limit,
+            'filter_context'  => [
+                'year_label'      => $yearLabel,
+                'ulp_label'       => $activeUlpName,
+                'penyulang_label' => $activeFeederName,
+                'scope'           => $scope,
+            ],
+            'pareto_point'    => $paretoPoint,
+            'pareto_sequence' => $paretoSequence,
+            'breakdowns'      => [
+                'by_ulp'              => $this->summarizeColumnCounts($matchingRows, 'ulp_name', 10),
+                'by_category'         => $this->summarizeColumnCounts($matchingRows, 'interruption_category', 5),
+                'by_equipment_family' => $this->summarizeColumnCounts($matchingRows, 'equipment_family', 6),
+                'by_relay'            => $this->summarizeColumnCounts($matchingRows, 'relay_label', 10),
+                'top_feeders'         => $this->summarizeColumnCounts($matchingRows, 'feeder_name', 8),
+                'top_causes'          => $this->summarizeColumnCounts($matchingRows, 'cause_raw', 10),
+                'energy_kwh_total'    => round($kwhSum, 2),
+                'fault_current'       => [
+                    'count' => count($ampValues),
+                    'avg'   => !empty($ampValues) ? round(array_sum($ampValues) / count($ampValues), 1) : null,
+                    'min'   => !empty($ampValues) ? round(min($ampValues), 1) : null,
+                    'max'   => !empty($ampValues) ? round(max($ampValues), 1) : null,
+                ],
+            ],
+            'events' => $events,
+        ];
+    }
+
+    /**
+     * Summarize grouped frequency and share (%) for a single normalized row field.
+     */
+    protected function summarizeColumnCounts(array $rows, string $field, int $limit = 10): array
+    {
+        $counts = [];
+        foreach ($rows as $r) {
+            $val = (string)($r[$field] ?? 'TIDAK TERCATAT');
+            $counts[$val] = ($counts[$val] ?? 0) + 1;
+        }
+        arsort($counts);
+        $total = count($rows);
+        $out   = [];
+        foreach (array_slice($counts, 0, $limit, true) as $k => $cnt) {
+            $out[] = [
+                'label' => $k,
+                'count' => $cnt,
+                'pct'   => $total > 0 ? round(($cnt / $total) * 100, 1) : 0.0,
+            ];
+        }
+        return $out;
     }
 }

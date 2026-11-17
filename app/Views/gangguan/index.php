@@ -97,6 +97,49 @@
     .gg-pivot-green tfoot td { background: #bbf7d0; font-weight: 700; position: sticky; bottom: 0; z-index: 2; }
 
     .gg-zero { color: #94a3b8; }
+    .gg-chart-scroll-x {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .gg-chart-wide-inner {
+        width: 100%;
+        position: relative;
+    }
+    @media (max-width: 767.98px) {
+        .gg-chart-wide-inner {
+            min-width: 680px;
+        }
+    }
+    .gg-log-table-wrap {
+        max-height: 540px;
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+        position: relative;
+        border-top: 1px solid #e2e8f0;
+        scrollbar-gutter: stable;
+    }
+    @media (max-width: 767.98px) {
+        .gg-log-table-wrap {
+            max-height: 62vh;
+        }
+    }
+    .gg-log-table {
+        border-collapse: separate;
+        border-spacing: 0;
+        margin-bottom: 0;
+        width: 100%;
+    }
+    .gg-log-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 4;
+        background-color: #f8fafc !important;
+        color: #475569;
+        border-bottom: 2px solid #cbd5e1;
+        box-shadow: 0 1px 0 rgba(15, 23, 42, 0.08);
+        white-space: nowrap;
+    }
 </style>
 
 <div class="container-fluid px-3 py-3">
@@ -179,8 +222,8 @@ $fullYearBTot = (int)($item3['year_b_total'] ?? 0);
     <div class="card-body py-2.5 px-3">
         <!-- Top source provenance & actions -->
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pb-2 mb-2 border-bottom">
-            <div class="d-flex flex-wrap align-items-center gap-2">
-                <span class="badge <?= $syncState === 'SYNCED' ? 'bg-success-subtle text-success border border-success-subtle' : ($syncState === 'ERROR' ? 'bg-warning-subtle text-warning-emphasis border border-warning-subtle' : 'bg-secondary-subtle text-secondary border') ?> rounded-pill px-2.5 py-1" style="font-size: 11px;">
+            <div class="d-flex flex-wrap align-items-center gap-2" style="min-width: 0; max-width: 100%;">
+                <span class="badge <?= $syncState === 'SYNCED' ? 'bg-success-subtle text-success border border-success-subtle' : ($syncState === 'ERROR' ? 'bg-warning-subtle text-warning-emphasis border border-warning-subtle' : 'bg-secondary-subtle text-secondary border') ?> rounded-pill px-2.5 py-1" style="font-size: 11px; white-space: normal; text-align: start; max-width: 100%; line-height: 1.35;">
                     <i class="fas fa-table me-1"></i><?= esc($syncStatus['source_label'] ?? 'Google Sheets (DATA_GANGGUAN)') ?>
                     &bull; <?= $syncState === 'SYNCED' ? 'Tersinkron' : ($syncState === 'ERROR' ? 'Mode Cache Offline' : $syncState) ?>
                 </span>
@@ -465,15 +508,18 @@ $fullYearBTot = (int)($item3['year_b_total'] ?? 0);
     <div class="col-lg-4 col-md-6 col-12">
         <div class="gg-card h-100 d-flex flex-column">
             <div class="gg-card-header">
-                <h6 class="gg-card-title">
-                    <span class="gg-num-badge bg-success-subtle text-success">5</span>Relai yang Bekerja
-                </h6>
+                <div>
+                    <h6 class="gg-card-title">
+                        <span class="gg-num-badge bg-success-subtle text-success">5</span>Relai yang Bekerja
+                    </h6>
+                    <small class="text-muted" style="font-size: 10.5px;">Klik batang untuk rincian relai</small>
+                </div>
                 <span class="badge bg-light text-secondary border rounded-pill" style="font-size: 10.5px;"><?= esc($focusLabel) ?></span>
             </div>
             <div class="card-body">
                 <?php if (!empty($item5['labels'])): ?>
-                    <div style="height: 225px; position: relative;">
-                        <canvas id="chartRelai"></canvas>
+                    <div style="height: 235px; position: relative;">
+                        <canvas id="chartRelai" role="img" aria-label="Grafik relai proteksi yang bekerja"></canvas>
                     </div>
                 <?php else: ?>
                     <div class="text-center text-muted py-5 small">Belum ada data relai kerja.</div>
@@ -545,6 +591,92 @@ $hasChartData = ($sumA > 0 || $sumB > 0);
     </div>
 </div>
 
+<!-- ═════════════════════════════════════════════ ENS (kWh) Reliability Analysis ══ -->
+<?php
+$ensData     = $analytics12['ens_analysis'] ?? [];
+$ensMoA      = $ensData['monthly_a'] ?? array_fill(0, 12, null);
+$ensMoB      = $ensData['monthly_b'] ?? array_fill(0, 12, null);
+$ensTotA     = (float)($ensData['total_a'] ?? 0);
+$ensTotB     = (float)($ensData['total_b'] ?? 0);
+$ensTotFocus = (float)($ensData['total_focus'] ?? 0);
+$ensDiff     = (float)($ensData['full_diff'] ?? 0);
+$ensPct      = $ensData['full_pct'] ?? null;
+$ensCompPct  = $ensData['comparable_pct'] ?? null;
+$ensMeta     = $ensData['meta'] ?? [];
+$hasEnsData  = ($ensTotA > 0 || $ensTotB > 0);
+$ensDiffCls  = $ensDiff > 0 ? 'danger' : ($ensDiff < 0 ? 'success' : 'secondary');
+$ensDiffSign = $ensDiff > 0 ? '+' : '';
+$ensPctStr   = $ensPct !== null ? ($ensPct > 0 ? '+' . $ensPct . '%' : $ensPct . '%') : 'N/A';
+?>
+<div class="gg-card mb-3" id="cardEnsGangguan">
+    <div class="gg-card-header">
+        <div>
+            <h6 class="gg-card-title">
+                <i class="fas fa-plug-circle-bolt text-warning me-2"></i>Analisis ENS (kWh) per Bulan &amp; Perbandingan Total Tahunan (<?= (int)$yearA ?> vs <?= (int)$yearB ?>)
+                <?php if ($penyulangId && !empty($activePenyulangName)): ?>
+                    <span class="badge bg-primary-subtle text-primary border ms-2 font-monospace"><?= esc($activePenyulangName) ?></span>
+                <?php endif; ?>
+            </h6>
+            <small class="text-muted" style="font-size: 11px;">
+                Sumber kolom <code><?= esc($ensMeta['source_column'] ?? '( Kwh )') ?></code> &bull;
+                Rumus: <span class="font-monospace"><?= esc($ensMeta['formula_text'] ?? '√3 × 20 kV × I × 0,85 × jam') ?></span> &bull;
+                Fokus aktif: <strong><?= esc($focusLabel) ?></strong> (<?= number_format($ensTotFocus, 2, ',', '.') ?> kWh) &bull;
+                Klik batang untuk rincian trip pembentuk ENS
+            </small>
+        </div>
+        <div class="d-flex flex-wrap gap-1.5 align-items-center" style="font-size: 11px;">
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 font-monospace">
+                <?= (int)$yearA ?>: <?= number_format($ensTotA, 2, ',', '.') ?> kWh
+            </span>
+            <span class="badge bg-secondary-subtle text-secondary border rounded-pill px-2.5 py-1 font-monospace">
+                <?= (int)$yearB ?>: <?= number_format($ensTotB, 2, ',', '.') ?> kWh
+            </span>
+            <span class="badge bg-<?= $ensDiffCls ?>-subtle text-<?= $ensDiffCls ?> border border-<?= $ensDiffCls ?>-subtle rounded-pill px-2.5 py-1 font-monospace">
+                <?= $ensDiffSign . number_format($ensDiff, 2, ',', '.') ?> kWh (<?= $ensPctStr ?>)
+            </span>
+        </div>
+    </div>
+    <div class="card-body">
+        <?php if ($hasEnsData): ?>
+        <div class="row g-3 align-items-stretch">
+            <div class="col-lg-8 col-12">
+                <div class="border rounded-3 p-2.5 bg-light bg-opacity-50 h-100 d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold text-dark small"><i class="fas fa-chart-bar text-primary me-1"></i>ENS (kWh) per Bulan (<?= (int)$yearA ?> vs <?= (int)$yearB ?>)</span>
+                        <span class="text-muted font-monospace" style="font-size: 10.5px;">Total bulanan = total tahunan (<?= esc($ensMeta['unit'] ?? 'kWh') ?>)</span>
+                    </div>
+                    <div style="height: 235px; position: relative;">
+                        <canvas id="chartEnsBulanan" role="img" aria-label="Grafik ENS (kWh) per bulan membandingkan tahun A dan tahun B"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-12">
+                <div class="border rounded-3 p-2.5 bg-light bg-opacity-50 h-100 d-flex flex-column justify-content-between gap-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold text-dark small"><i class="fas fa-scale-balanced text-warning-emphasis me-1"></i>Total ENS per Tahun</span>
+                        <span class="badge bg-light text-secondary border rounded-pill" style="font-size: 10px;"><?= esc($focusLabel) ?></span>
+                    </div>
+                    <div style="height: 175px; position: relative;">
+                        <canvas id="chartEnsTahunan" role="img" aria-label="Grafik perbandingan total ENS per tahun"></canvas>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center px-2 py-1.5 rounded-2 bg-white border small font-monospace" style="font-size: 10.5px;">
+                        <span class="text-muted">Setara <?= esc($ensData['comparable_period'] ?? 'YTD') ?>:</span>
+                        <span class="fw-bold text-dark">
+                            <?= number_format((float)($ensData['comparable_a'] ?? 0), 2, ',', '.') ?> vs <?= number_format((float)($ensData['comparable_b'] ?? 0), 2, ',', '.') ?>
+                            <?php if ($ensCompPct !== null): ?>
+                                (<?= ($ensCompPct > 0 ? '+' : '') . $ensCompPct ?>%)
+                            <?php endif; ?>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php else: ?>
+            <div class="text-center py-4 text-muted small">Belum ada data ENS (kWh) pada tahun <?= (int)$yearA ?> maupun <?= (int)$yearB ?> sesuai filter ini.</div>
+        <?php endif; ?>
+    </div>
+</div>
+
 <!-- ═════════════════════════════════════════════ ITEM 7: PARETO PENYEBAB ══ -->
 <div class="gg-card mb-3">
     <div class="gg-card-header">
@@ -552,19 +684,28 @@ $hasChartData = ($sumA > 0 || $sumB > 0);
             <h6 class="gg-card-title">
                 <span class="gg-num-badge bg-warning-subtle text-warning-emphasis">7</span>Pareto Penyebab Gangguan (<code>PENYEBAB SESUAI KODE GANGGUAN</code>)
             </h6>
-            <small class="text-muted" style="font-size: 11px;">Diurutkan dari frekuensi tertinggi beserta kurva kontribusi kumulatif (%) &bull; Fokus: <?= esc($focusLabel) ?></small>
+            <small class="text-muted" style="font-size: 11px;">Diurutkan menurun beserta kurva &amp; batas Pareto 80% &bull; Klik batang untuk rincian penyebab, klik titik garis untuk urutan kumulatif &bull; Fokus: <?= esc($focusLabel) ?></small>
         </div>
-        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2.5 py-1 font-monospace" style="font-size: 11px;">
-            <?= number_format((int)($item7['total'] ?? 0)) ?> Kejadian &bull; <?= count($item7['items'] ?? []) ?> Kode Penyebab
-        </span>
+        <div class="d-flex flex-wrap gap-1.5 align-items-center">
+            <?php if (!empty($item7['vital_80_count'])): ?>
+            <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1 font-monospace" style="font-size: 11px;">
+                Vital &le;80%: <?= (int)$item7['vital_80_count'] ?> Kode (<?= number_format((float)($item7['vital_80_pct'] ?? 0), 1) ?>%)
+            </span>
+            <?php endif; ?>
+            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2.5 py-1 font-monospace" style="font-size: 11px;">
+                <?= number_format((int)($item7['total'] ?? 0)) ?> Kejadian &bull; <?= count($item7['items'] ?? []) ?> Kode Penyebab
+            </span>
+        </div>
     </div>
     <div class="card-body">
         <?php if (!empty($item7['items'])): ?>
-            <div style="height: 300px; position: relative;" class="mb-3">
-                <canvas id="chartParetoPenyebab"></canvas>
+            <div class="gg-chart-scroll-x mb-3">
+                <div class="gg-chart-wide-inner" style="height: 320px;">
+                    <canvas id="chartParetoPenyebab" role="img" aria-label="Grafik Pareto penyebab gangguan"></canvas>
+                </div>
             </div>
-            <div class="table-responsive" style="max-height: 240px; overflow-y: auto;">
-                <table class="table table-sm table-hover align-middle mb-0" style="font-size: 12px;">
+            <div class="table-responsive" style="max-height: 260px; overflow-y: auto;">
+                <table class="table table-sm table-hover align-middle mb-0" id="tableParetoPenyebab" style="font-size: 12px;">
                     <thead class="table-light sticky-top" style="font-size: 11px;">
                         <tr>
                             <th style="width: 40px;">#</th>
@@ -573,12 +714,12 @@ $hasChartData = ($sumA > 0 || $sumB > 0);
                             <th class="text-end">Jumlah</th>
                             <th class="text-end">Kontribusi</th>
                             <th class="text-end">Kumulatif</th>
-                            <th style="width: 110px;">% Kumulatif</th>
+                            <th style="width: 120px;">% Kumulatif</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($item7['items'] as $idx => $pRow): ?>
-                        <tr class="<?= !empty($pRow['is_vital_80']) ? 'table-warning-subtle' : '' ?>">
+                        <tr class="gg-pareto-row <?= !empty($pRow['is_vital_80']) ? 'table-warning-subtle' : '' ?>" data-cause="<?= esc($pRow['cause_raw']) ?>" title="Klik untuk melihat rincian kejadian <?= esc($pRow['cause_raw']) ?>">
                             <td class="text-muted fw-bold"><?= $idx + 1 ?></td>
                             <td class="fw-bold text-dark font-monospace">
                                 <?= esc($pRow['cause_raw']) ?>
@@ -601,6 +742,15 @@ $hasChartData = ($sumA > 0 || $sumB > 0);
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
+                    <tfoot class="table-light fw-bold" style="font-size: 11.5px;">
+                        <tr>
+                            <td colspan="3">Total Rekonsiliasi (<?= (int)($item7['category_count'] ?? count($item7['items'])) ?> Kategori)</td>
+                            <td class="text-end font-monospace"><?= number_format((int)($item7['total'] ?? 0)) ?></td>
+                            <td class="text-end font-monospace"><?= number_format((float)($item7['sum_pct'] ?? 100), 1) ?>%</td>
+                            <td class="text-end font-monospace"><?= number_format((int)($item7['total'] ?? 0)) ?></td>
+                            <td class="text-end font-monospace"><?= number_format((float)($item7['final_cumulative_pct'] ?? 100), 1) ?>%</td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         <?php else: ?>
@@ -702,11 +852,13 @@ $hasChartData = ($sumA > 0 || $sumB > 0);
     </div>
     <div class="card-body">
         <?php if (!empty($item9['all_devices'])): ?>
-            <div style="height: 270px; position: relative;">
-                <canvas id="chartSebaranPeralatan"></canvas>
+            <div class="gg-chart-scroll-x">
+                <div class="gg-chart-wide-inner" style="height: 280px;">
+                    <canvas id="chartSebaranPeralatan" role="img" aria-label="Grafik sebaran gangguan per peralatan switching"></canvas>
+                </div>
             </div>
             <div class="text-muted mt-2" style="font-size: 11px;">
-                Menampilkan hingga 25 peralatan dengan frekuensi tertinggi. Gunakan tombol di kanan atas untuk menyertakan atau menyembunyikan PMT GI agar skala Recloser/PMCB terbaca jelas.
+                Menampilkan hingga 25 peralatan dengan frekuensi tertinggi. Klik batang peralatan untuk melihat detail kejadian. Gunakan tombol di kanan atas untuk menyertakan atau menyembunyikan PMT GI.
             </div>
         <?php else: ?>
             <div class="text-center py-4 text-muted small">Belum ada data sebaran peralatan pada filter ini.</div>
@@ -1039,8 +1191,8 @@ $p12Rows     = $item12['rows'] ?? [];
             <span class="vr"></span>
             <span class="text-info"><i class="fas fa-plug-circle-bolt me-1"></i>ENS <strong><?= number_format($totalKwh, 1) ?> kWh</strong></span>
         </div>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0" style="font-size: 13px;">
+        <div class="table-responsive gg-log-table-wrap">
+            <table class="table table-hover align-middle mb-0 gg-log-table" id="tableLogRinci" style="font-size: 13px;">
                 <thead class="table-light text-muted fw-semibold">
                     <tr>
                         <th class="ps-3" style="width: 50px;">No</th>
@@ -1358,6 +1510,7 @@ $p12Rows     = $item12['rows'] ?? [];
     </div>
 </div>
 <?php endif; ?>
+<?= $this->include('partials/_gangguan_drilldown_modal') ?>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
@@ -1408,8 +1561,73 @@ $p12Rows     = $item12['rows'] ?? [];
         }
     };
 
+    var activeFilterParams = {
+        year_a: <?= (int)$yearA ?>,
+        year_b: <?= (int)$yearB ?>,
+        scope: '<?= esc($scope ?? 'year_a') ?>',
+        ulp_id: <?= $ulpIdFilter ? (int)$ulpIdFilter : 'null' ?>,
+        penyulang_id: <?= $penyulangId ? (int)$penyulangId : 'null' ?>
+    };
+
+    function openGgDetail(dimension, key, extra, triggerEl) {
+        var params = Object.assign({}, activeFilterParams, extra || {}, { dimension: dimension, key: key });
+        if (window.openGangguanDrilldown) {
+            window.openGangguanDrilldown({
+                endpoint: '<?= site_url('gangguan/drilldown') ?>',
+                params: params,
+                triggerEl: triggerEl
+            });
+        }
+    }
+
+    function setPointerOnHover(evt, elements) {
+        if (evt && evt.native && evt.native.target) {
+            evt.native.target.style.cursor = (elements && elements.length) ? 'pointer' : 'default';
+        }
+    }
+
+    var pareto80ThresholdPlugin = {
+        id: 'paretoThreshold80',
+        afterDatasetsDraw: function(chart) {
+            var y1 = chart.scales && chart.scales.y1;
+            var area = chart.chartArea;
+            if (!y1 || !area) return;
+            var yPx = y1.getPixelForValue(80);
+            if (isNaN(yPx)) return;
+            var c = chart.ctx;
+            c.save();
+            c.beginPath();
+            c.setLineDash([6, 4]);
+            c.strokeStyle = 'rgba(220, 38, 38, 0.78)';
+            c.lineWidth = 1.6;
+            c.moveTo(area.left, yPx);
+            c.lineTo(area.right, yPx);
+            c.stroke();
+
+            var labelText = 'Batas Pareto 80%';
+            c.font = '700 10px Inter, sans-serif';
+            var txtW = c.measureText(labelText).width;
+            var boxW = txtW + 12;
+            var boxH = 18;
+            var boxX = Math.max(area.left + 4, area.right - boxW - 6);
+            var boxY = Math.max(area.top + 2, yPx - boxH - 4);
+            c.fillStyle = 'rgba(254, 226, 226, 0.96)';
+            c.strokeStyle = 'rgba(220, 38, 38, 0.65)';
+            c.setLineDash([]);
+            c.lineWidth = 1;
+            c.fillRect(boxX, boxY, boxW, boxH);
+            c.strokeRect(boxX, boxY, boxW, boxH);
+            c.fillStyle = '#991b1b';
+            c.textAlign = 'left';
+            c.textBaseline = 'middle';
+            c.fillText(labelText, boxX + 6, boxY + (boxH / 2));
+            c.restore();
+        }
+    };
+
     var sebaranAllDevices    = <?= json_encode(array_slice($item9['all_devices'] ?? [], 0, 25), JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) ?>;
     var sebaranNonPmtDevices = <?= json_encode(array_slice($item9['non_pmt_devices'] ?? [], 0, 25), JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) ?>;
+    var sebaranTotalFocus    = <?= (int)($focusTotal ?? 0) ?>;
     var sebaranChartInstance = null;
 
     window.switchDeviceDistMode = function(mode, btn) {
@@ -1434,6 +1652,7 @@ $p12Rows     = $item12['rows'] ?? [];
             sebaranChartInstance.destroy();
             sebaranChartInstance = null;
         }
+        var maxCount = list.reduce(function(m, d) { return Math.max(m, Number(d.count || 0)); }, 0);
         sebaranChartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
@@ -1449,21 +1668,32 @@ $p12Rows     = $item12['rows'] ?? [];
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                layout: { padding: { top: 20 } },
+                onHover: setPointerOnHover,
+                onClick: function(evt, elements, chart) {
+                    var hits = elements && elements.length ? elements : chart.getElementsAtEventForMode(evt, 'nearest', { intersect: false }, true);
+                    if (!hits || !hits.length) return;
+                    var item = list[hits[0].index];
+                    if (item) {
+                        openGgDetail('device', item.device_name, { sub_key: item.equipment_family }, ctx);
+                    }
+                },
+                layout: { padding: { top: 22 } },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
                         callbacks: {
-                            afterLabel: function(ctx) {
-                                var item = list[ctx.dataIndex];
-                                return item ? ('Tipe: ' + item.equipment_family + ' | ULP: ' + item.ulp_name) : '';
+                            afterLabel: function(tc) {
+                                var item = list[tc.dataIndex];
+                                if (!item) return '';
+                                var pct = sebaranTotalFocus > 0 ? ((item.count / sebaranTotalFocus) * 100).toFixed(1) : '0.0';
+                                return ['Porsi Fokus: ' + pct + '%', 'Famili: ' + item.equipment_family + ' | ULP: ' + item.ulp_name, 'Klik batang untuk detail'];
                             }
                         }
                     }
                 },
                 scales: {
-                    x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 40, minRotation: 25 } },
-                    y: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } } }
+                    x: { grid: { display: false }, ticks: { autoSkip: false, font: { size: 10 }, maxRotation: 40, minRotation: 25 } },
+                    y: { beginAtZero: true, suggestedMax: maxCount > 0 ? Math.ceil(maxCount * 1.18) : 5, ticks: { precision: 0, font: { size: 10 } } }
                 }
             }
         });
@@ -1474,6 +1704,8 @@ $p12Rows     = $item12['rows'] ?? [];
             // Item 1: Permanen vs Temporer Donut
             var ctx1 = document.getElementById('chartPermTemp');
             if (ctx1) {
+                var catKeys1 = ['TEMPORARY', 'PERMANENT'];
+                var catTotal1 = <?= (int)$focusCat['TEMPORARY'] ?> + <?= (int)$focusCat['PERMANENT'] ?>;
                 new Chart(ctx1, {
                     type: 'doughnut',
                     data: {
@@ -1489,8 +1721,24 @@ $p12Rows     = $item12['rows'] ?? [];
                         responsive: true,
                         maintainAspectRatio: false,
                         cutout: '58%',
+                        onHover: setPointerOnHover,
+                        onClick: function(evt, elements) {
+                            if (!elements || !elements.length) return;
+                            var k = catKeys1[elements[0].index];
+                            if (k) openGgDetail('category', k, {}, ctx1);
+                        },
                         plugins: {
-                            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+                            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(tc) {
+                                        var v = Number(tc.raw || 0);
+                                        var pct = catTotal1 > 0 ? ((v / catTotal1) * 100).toFixed(1) : '0.0';
+                                        return tc.label + ': ' + v.toLocaleString('id-ID') + ' kejadian (' + pct + '%)';
+                                    },
+                                    afterLabel: function() { return 'Klik segmen untuk lihat daftar kejadian'; }
+                                }
+                            }
                         }
                     }
                 });
@@ -1499,20 +1747,24 @@ $p12Rows     = $item12['rows'] ?? [];
             // Item 2: Gangguan per ULP
             var ctx2 = document.getElementById('chartUlp');
             if (ctx2) {
+                var ulpLabels = <?= json_encode($item2['labels'] ?? []) ?>;
+                var ulpFocusCounts = <?= json_encode($item2['focus_counts'] ?? []) ?>;
+                var ulpYearBCounts = <?= json_encode($item2['year_b_counts'] ?? []) ?>;
+                var maxUlpVal = Math.max.apply(null, [0].concat(ulpFocusCounts, ulpYearBCounts));
                 new Chart(ctx2, {
                     type: 'bar',
                     data: {
-                        labels: <?= json_encode($item2['labels'] ?? []) ?>,
+                        labels: ulpLabels,
                         datasets: [
                             {
                                 label: '<?= esc($focusLabel) ?>',
-                                data: <?= json_encode($item2['focus_counts'] ?? []) ?>,
+                                data: ulpFocusCounts,
                                 backgroundColor: '#f97316',
                                 borderRadius: 4
                             },
                             {
                                 label: 'Tahun <?= (int)$yearB ?>',
-                                data: <?= json_encode($item2['year_b_counts'] ?? []) ?>,
+                                data: ulpYearBCounts,
                                 backgroundColor: '#cbd5e1',
                                 borderRadius: 4
                             }
@@ -1523,11 +1775,22 @@ $p12Rows     = $item12['rows'] ?? [];
                         indexAxis: 'y',
                         responsive: true,
                         maintainAspectRatio: false,
-                        layout: { padding: { right: 32 } },
-                        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10.5 } } } },
+                        onHover: setPointerOnHover,
+                        onClick: function(evt, elements) {
+                            if (!elements || !elements.length) return;
+                            var hit = elements[0];
+                            var ulpName = ulpLabels[hit.index];
+                            var extra = (hit.datasetIndex === 1) ? { target_year: <?= (int)$yearB ?> } : {};
+                            if (ulpName) openGgDetail('ulp', ulpName, extra, ctx2);
+                        },
+                        layout: { padding: { right: 38 } },
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10.5 } } },
+                            tooltip: { callbacks: { afterBody: function() { return ['Klik batang untuk rincian ULP']; } } }
+                        },
                         scales: {
-                            x: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } } },
-                            y: { grid: { display: false }, ticks: { font: { size: 10.5, weight: '600' } } }
+                            x: { beginAtZero: true, suggestedMax: maxUlpVal > 0 ? Math.ceil(maxUlpVal * 1.18) : 5, ticks: { precision: 0, font: { size: 10 } } },
+                            y: { grid: { display: false }, ticks: { autoSkip: false, font: { size: 10.5, weight: '600' } } }
                         }
                     }
                 });
@@ -1536,52 +1799,81 @@ $p12Rows     = $item12['rows'] ?? [];
             // Item 4: Permanen vs Temporer per ULP
             var ctx4 = document.getElementById('chartPermTempUlp');
             if (ctx4) {
+                var ulpLabels4 = <?= json_encode($item4['labels'] ?? []) ?>;
+                var tempArr4   = <?= json_encode($item4['temporer'] ?? []) ?>;
+                var permArr4   = <?= json_encode($item4['permanen'] ?? []) ?>;
+                var max4 = Math.max.apply(null, [0].concat(tempArr4, permArr4));
                 new Chart(ctx4, {
                     type: 'bar',
                     data: {
-                        labels: <?= json_encode($item4['labels'] ?? []) ?>,
+                        labels: ulpLabels4,
                         datasets: [
-                            { label: 'Temporer', data: <?= json_encode($item4['temporer'] ?? []) ?>, backgroundColor: '#64748b', borderRadius: 4 },
-                            { label: 'Permanen', data: <?= json_encode($item4['permanen'] ?? []) ?>, backgroundColor: '#ef4444', borderRadius: 4 }
+                            { label: 'Temporer', data: tempArr4, backgroundColor: '#64748b', borderRadius: 4 },
+                            { label: 'Permanen', data: permArr4, backgroundColor: '#ef4444', borderRadius: 4 }
                         ]
                     },
                     plugins: [barValueLabelPlugin],
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        layout: { padding: { top: 18 } },
-                        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } },
+                        onHover: setPointerOnHover,
+                        onClick: function(evt, elements) {
+                            if (!elements || !elements.length) return;
+                            var hit = elements[0];
+                            var u = ulpLabels4[hit.index];
+                            var c = hit.datasetIndex === 0 ? 'TEMPORARY' : 'PERMANENT';
+                            if (u) openGgDetail('ulp_category', u + '|' + c, {}, ctx4);
+                        },
+                        layout: { padding: { top: 20 } },
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } },
+                            tooltip: { callbacks: { afterBody: function() { return ['Klik batang untuk rincian ULP & kategori']; } } }
+                        },
                         scales: {
-                            x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-                            y: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } } }
+                            x: { grid: { display: false }, ticks: { autoSkip: false, font: { size: 10 } } },
+                            y: { beginAtZero: true, suggestedMax: max4 > 0 ? Math.ceil(max4 * 1.18) : 5, ticks: { precision: 0, font: { size: 10 } } }
                         }
                     }
                 });
             }
 
-            // Item 5: Relai yang Bekerja
+            // Item 5: Relai yang Bekerja (Horizontal bar so labels never clip at bottom)
             var ctx5 = document.getElementById('chartRelai');
             if (ctx5) {
+                var relayLabels5 = <?= json_encode($item5['labels'] ?? []) ?>;
+                var relayData5   = <?= json_encode($item5['focus_counts'] ?? []) ?>;
+                var maxRelay5    = Math.max.apply(null, [0].concat(relayData5));
                 new Chart(ctx5, {
                     type: 'bar',
                     data: {
-                        labels: <?= json_encode($item5['labels'] ?? []) ?>,
+                        labels: relayLabels5,
                         datasets: [{
                             label: '<?= esc($focusLabel) ?>',
-                            data: <?= json_encode($item5['focus_counts'] ?? []) ?>,
+                            data: relayData5,
                             backgroundColor: '#16a34a',
                             borderRadius: 4
                         }]
                     },
                     plugins: [barValueLabelPlugin],
                     options: {
+                        indexAxis: 'y',
                         responsive: true,
                         maintainAspectRatio: false,
-                        layout: { padding: { top: 18 } },
-                        plugins: { legend: { display: false } },
+                        onHover: setPointerOnHover,
+                        onClick: function(evt, elements, chart) {
+                            var hits = elements && elements.length ? elements : chart.getElementsAtEventForMode(evt, 'nearest', { intersect: false }, true);
+                            if (!hits || !hits.length) return;
+                            var lbl = relayLabels5[hits[0].index];
+                            if (lbl) openGgDetail('relay', lbl, {}, ctx5);
+                        },
+                        layout: { padding: { right: 36, top: 4, bottom: 4 } },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { afterBody: function() { return ['Klik batang untuk daftar trip relai ini']; } } }
+                        },
                         scales: {
-                            x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 30 } },
-                            y: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } } }
+                            x: { beginAtZero: true, suggestedMax: maxRelay5 > 0 ? Math.ceil(maxRelay5 * 1.18) : 5, ticks: { precision: 0, font: { size: 10 } } },
+                            y: { grid: { display: false }, ticks: { autoSkip: false, font: { size: 10.5, weight: '600' } } }
                         }
                     }
                 });
@@ -1590,12 +1882,15 @@ $p12Rows     = $item12['rows'] ?? [];
             // Item 6: Rasio PMT vs REC/PMCB
             var ctx6 = document.getElementById('chartPmtRecl');
             if (ctx6) {
+                var swKeys6   = <?= json_encode($item6['keys'] ?? []) ?>;
+                var swCounts6 = <?= json_encode($item6['focus_counts'] ?? []) ?>;
+                var swTotal6  = swCounts6.reduce(function(a, b) { return a + Number(b || 0); }, 0);
                 new Chart(ctx6, {
                     type: 'doughnut',
                     data: {
                         labels: <?= json_encode($item6['labels'] ?? []) ?>,
                         datasets: [{
-                            data: <?= json_encode($item6['focus_counts'] ?? []) ?>,
+                            data: swCounts6,
                             backgroundColor: ['#0284c7', '#f59e0b', '#64748b'],
                             borderWidth: 2,
                             borderColor: '#ffffff'
@@ -1605,7 +1900,25 @@ $p12Rows     = $item12['rows'] ?? [];
                         responsive: true,
                         maintainAspectRatio: false,
                         cutout: '55%',
-                        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10.5 } } } }
+                        onHover: setPointerOnHover,
+                        onClick: function(evt, elements) {
+                            if (!elements || !elements.length) return;
+                            var k = swKeys6[elements[0].index];
+                            if (k) openGgDetail('switching_type', k, {}, ctx6);
+                        },
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10.5 } } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(tc) {
+                                        var v = Number(tc.raw || 0);
+                                        var pct = swTotal6 > 0 ? ((v / swTotal6) * 100).toFixed(1) : '0.0';
+                                        return tc.label + ': ' + v.toLocaleString('id-ID') + ' kejadian (' + pct + '%)';
+                                    },
+                                    afterLabel: function() { return 'Klik segmen untuk lihat detail peralatan'; }
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -1613,34 +1926,196 @@ $p12Rows     = $item12['rows'] ?? [];
             // Monthly Bar Chart (Year A vs Year B)
             var ctxMonthly = document.getElementById('chartGangguan');
             if (ctxMonthly) {
+                var moA = <?= json_encode(array_values($monthlyA)) ?>;
+                var moB = <?= json_encode(array_values($monthlyB)) ?>;
+                var maxMo = Math.max.apply(null, [0].concat(moA, moB));
                 new Chart(ctxMonthly, {
                     type: 'bar',
                     data: {
                         labels: <?= json_encode($monthLabels) ?>,
                         datasets: [
-                            { label: 'Tahun <?= (int)$yearA ?>', data: <?= json_encode(array_values($monthlyA)) ?>, backgroundColor: 'rgba(13,110,253,0.82)', borderRadius: 4 },
-                            { label: 'Tahun <?= (int)$yearB ?>', data: <?= json_encode(array_values($monthlyB)) ?>, backgroundColor: 'rgba(148,163,184,0.65)', borderRadius: 4 }
+                            { label: 'Tahun <?= (int)$yearA ?>', data: moA, backgroundColor: 'rgba(13,110,253,0.82)', borderRadius: 4 },
+                            { label: 'Tahun <?= (int)$yearB ?>', data: moB, backgroundColor: 'rgba(148,163,184,0.65)', borderRadius: 4 }
                         ]
                     },
                     plugins: [barValueLabelPlugin],
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        layout: { padding: { top: 18 } },
+                        onHover: setPointerOnHover,
+                        onClick: function(evt, elements) {
+                            if (!elements || !elements.length) return;
+                            var hit = elements[0];
+                            var yr  = hit.datasetIndex === 0 ? <?= (int)$yearA ?> : <?= (int)$yearB ?>;
+                            openGgDetail('month', String(hit.index + 1), { target_year: yr }, ctxMonthly);
+                        },
+                        layout: { padding: { top: 20 } },
                         interaction: { mode: 'index', intersect: false },
-                        plugins: { legend: { display: false } },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { afterBody: function() { return ['Klik batang bulan untuk lihat rincian kejadian']; } } }
+                        },
                         scales: {
                             x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-                            y: { beginAtZero: true, ticks: { precision: 0, font: { size: 11 } } }
+                            y: { beginAtZero: true, suggestedMax: maxMo > 0 ? Math.ceil(maxMo * 1.18) : 5, ticks: { precision: 0, font: { size: 11 } } }
                         }
                     }
                 });
             }
 
-            // Item 7: Pareto Penyebab Gangguan (Dual-Axis Bar + Cumulative %)
+            // ENS (kWh) Monthly Comparison & Annual Total Comparison
+            var ctxEnsMo = document.getElementById('chartEnsBulanan');
+            var ensMoA   = <?= json_encode($ensMoA ?? []) ?>;
+            var ensMoB   = <?= json_encode($ensMoB ?? []) ?>;
+            var ggScope  = <?= json_encode($scope ?? 'year_a') ?>;
+            if (ctxEnsMo) {
+                var maxEnsMo = Math.max.apply(null, [0].concat(
+                    ensMoA.filter(function(v) { return v !== null; }),
+                    ensMoB.filter(function(v) { return v !== null; })
+                ));
+                new Chart(ctxEnsMo, {
+                    type: 'bar',
+                    data: {
+                        labels: <?= json_encode($monthLabels) ?>,
+                        datasets: [
+                            {
+                                label: 'Tahun <?= (int)$yearA ?> (<?= number_format($ensTotA, 2, ',', '.') ?> kWh)',
+                                data: ensMoA,
+                                backgroundColor: ggScope === 'year_b' ? 'rgba(13,110,253,0.42)' : 'rgba(13,110,253,0.86)',
+                                borderRadius: 4
+                            },
+                            {
+                                label: 'Tahun <?= (int)$yearB ?> (<?= number_format($ensTotB, 2, ',', '.') ?> kWh)',
+                                data: ensMoB,
+                                backgroundColor: ggScope === 'year_b' ? 'rgba(217,119,6,0.86)' : 'rgba(148,163,184,0.68)',
+                                borderRadius: 4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        onHover: setPointerOnHover,
+                        onClick: function(evt, elements, chart) {
+                            var hits = (elements && elements.length) ? elements : chart.getElementsAtEventForMode(evt, 'index', { intersect: false }, true);
+                            if (!hits || !hits.length) return;
+                            var hit = hits[0];
+                            var yr  = hit.datasetIndex === 0 ? <?= (int)$yearA ?> : <?= (int)$yearB ?>;
+                            openGgDetail('ens_month', String(hit.index + 1), { target_year: yr }, ctxEnsMo);
+                        },
+                        interaction: { mode: 'index', intersect: false },
+                        layout: { padding: { top: 10 } },
+                        plugins: {
+                            legend: { position: 'top', align: 'end', labels: { boxWidth: 10, font: { size: 10.5 } } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(tc) {
+                                        if (tc.raw === null || typeof tc.raw === 'undefined') {
+                                            return tc.dataset.label.split(' (')[0] + ': Belum ada data';
+                                        }
+                                        return tc.dataset.label.split(' (')[0] + ': ' + Number(tc.raw).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' kWh';
+                                    },
+                                    afterBody: function() { return ['Klik batang untuk rincian gangguan pembentuk ENS']; }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { font: { size: 10.5 } } },
+                            y: {
+                                beginAtZero: true,
+                                suggestedMax: maxEnsMo > 0 ? Math.ceil(maxEnsMo * 1.15) : 10,
+                                ticks: {
+                                    font: { size: 10 },
+                                    callback: function(v) {
+                                        if (v >= 1000) return (v / 1000).toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' rb';
+                                        return Number(v).toLocaleString('id-ID');
+                                    }
+                                },
+                                title: { display: true, text: 'ENS (kWh)', font: { size: 10, weight: 'bold' } }
+                            }
+                        }
+                    }
+                });
+            }
+
+            var ctxEnsYr = document.getElementById('chartEnsTahunan');
+            if (ctxEnsYr) {
+                var yrKeysEns = [<?= (int)$yearA ?>, <?= (int)$yearB ?>];
+                var yrLabelsEns = ['Tahun <?= (int)$yearA ?>', 'Tahun <?= (int)$yearB ?>'];
+                var yrValsEns = [<?= json_encode(round($ensTotA, 2)) ?>, <?= json_encode(round($ensTotB, 2)) ?>];
+                var yrColorsEns = [
+                    ggScope === 'year_b' ? 'rgba(13,110,253,0.45)' : 'rgba(13,110,253,0.88)',
+                    ggScope === 'year_b' ? 'rgba(217,119,6,0.88)' : 'rgba(100,116,139,0.72)'
+                ];
+                if (ggScope === 'combined' && <?= (int)$yearA ?> !== <?= (int)$yearB ?>) {
+                    yrKeysEns.push('COMBINED');
+                    yrLabelsEns.push('Gabungan');
+                    yrValsEns.push(<?= json_encode(round((float)($ensData['combined_total'] ?? ($ensTotA + $ensTotB)), 2)) ?>);
+                    yrColorsEns.push('rgba(22,163,74,0.86)');
+                }
+                var maxEnsYr = Math.max.apply(null, [0].concat(yrValsEns));
+                new Chart(ctxEnsYr, {
+                    type: 'bar',
+                    data: {
+                        labels: yrLabelsEns,
+                        datasets: [{
+                            label: 'Total ENS (kWh)',
+                            data: yrValsEns,
+                            backgroundColor: yrColorsEns,
+                            borderRadius: 6,
+                            maxBarThickness: 58
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        onHover: setPointerOnHover,
+                        onClick: function(evt, elements, chart) {
+                            var hits = (elements && elements.length) ? elements : chart.getElementsAtEventForMode(evt, 'nearest', { intersect: false }, true);
+                            if (!hits || !hits.length) return;
+                            var k = yrKeysEns[hits[0].index];
+                            if (k === 'COMBINED') {
+                                openGgDetail('ens_year', 'COMBINED', {}, ctxEnsYr);
+                            } else if (k) {
+                                openGgDetail('ens_year', String(k), { target_year: k }, ctxEnsYr);
+                            }
+                        },
+                        layout: { padding: { top: 14 } },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(tc) {
+                                        return Number(tc.raw || 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' kWh';
+                                    },
+                                    afterLabel: function() { return ['Klik batang untuk rincian ENS tahun ini']; }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { font: { size: 11, weight: '700' } } },
+                            y: {
+                                beginAtZero: true,
+                                suggestedMax: maxEnsYr > 0 ? Math.ceil(maxEnsYr * 1.18) : 10,
+                                ticks: {
+                                    font: { size: 10 },
+                                    callback: function(v) {
+                                        if (v >= 1000) return (v / 1000).toLocaleString('id-ID', { maximumFractionDigits: 0 }) + ' rb';
+                                        return Number(v).toLocaleString('id-ID');
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Item 7: Pareto Penyebab Gangguan (Dual-Axis Bar + Cumulative % + 80% Reference Threshold)
             var ctx7 = document.getElementById('chartParetoPenyebab');
             if (ctx7) {
                 var paretoItems = <?= json_encode($item7['items'] ?? [], JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) ?>;
+                var paretoTotal = <?= (int)($item7['total'] ?? 0) ?>;
+                var maxParetoCount = paretoItems.reduce(function(m, i) { return Math.max(m, Number(i.count || 0)); }, 0);
                 new Chart(ctx7, {
                     data: {
                         labels: paretoItems.map(function(i) { return i.cause_raw; }),
@@ -1652,7 +2127,9 @@ $p12Rows     = $item12['rows'] ?? [];
                                 borderColor: '#dc2626',
                                 backgroundColor: '#dc2626',
                                 borderWidth: 2.4,
-                                pointRadius: 3.5,
+                                pointRadius: 4,
+                                pointHoverRadius: 6,
+                                pointHitRadius: 10,
                                 tension: 0.15,
                                 yAxisID: 'y1',
                                 order: 0
@@ -1670,44 +2147,96 @@ $p12Rows     = $item12['rows'] ?? [];
                             }
                         ]
                     },
-                    plugins: [barValueLabelPlugin],
+                    plugins: [barValueLabelPlugin, pareto80ThresholdPlugin],
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
                         interaction: { mode: 'index', intersect: false },
-                        layout: { padding: { top: 20 } },
+                        onHover: setPointerOnHover,
+                        onClick: function(evt, elements, chart) {
+                            // First detect exact hit on cumulative point vs bar so both interactions work cleanly
+                            var exactHits = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+                            if (exactHits && exactHits.length) {
+                                var lineHit = exactHits.find(function(h) { return h.datasetIndex === 0; });
+                                if (lineHit) {
+                                    var rowLine = paretoItems[lineHit.index];
+                                    if (rowLine) {
+                                        openGgDetail('pareto_cumulative', rowLine.cause_raw, { rank: rowLine.rank }, ctx7);
+                                    }
+                                    return;
+                                }
+                                var barHit = exactHits.find(function(h) { return h.datasetIndex === 1; });
+                                if (barHit) {
+                                    var rowBar = paretoItems[barHit.index];
+                                    if (rowBar) {
+                                        openGgDetail('pareto_cause', rowBar.cause_raw, {}, ctx7);
+                                    }
+                                    return;
+                                }
+                            }
+                            var colHits = chart.getElementsAtEventForMode(evt, 'index', { intersect: false }, true);
+                            if (colHits && colHits.length) {
+                                var rowCol = paretoItems[colHits[0].index];
+                                if (rowCol) openGgDetail('pareto_cause', rowCol.cause_raw, {}, ctx7);
+                            }
+                        },
+                        layout: { padding: { top: 22 } },
                         plugins: {
                             legend: { position: 'top', align: 'end', labels: { boxWidth: 12, font: { size: 11 } } },
                             tooltip: {
                                 callbacks: {
+                                    title: function(items) {
+                                        var idx = items[0] ? items[0].dataIndex : -1;
+                                        var row = paretoItems[idx];
+                                        return row ? ('#' + row.rank + ' • ' + row.cause_raw) : '';
+                                    },
                                     afterBody: function(items) {
                                         var idx = items[0] ? items[0].dataIndex : -1;
                                         var row = paretoItems[idx];
-                                        return row ? ['Kontribusi: ' + row.pct + '%', 'Kategori: ' + row.category_label] : [];
+                                        if (!row) return [];
+                                        return [
+                                            'Kontribusi: ' + row.pct + '% (' + row.count + ' / ' + paretoTotal + ')',
+                                            'Kumulatif: ' + row.cumulative_count + ' / ' + paretoTotal + ' (' + row.cumulative_pct + '%)',
+                                            'Status Pareto: ' + (row.is_vital_80 ? '80% Vital Few' : 'Tail > 80%'),
+                                            'Klasifikasi: ' + row.category_label,
+                                            'Klik batang: rincian penyebab • Klik titik garis: urutan kumulatif'
+                                        ];
                                     }
                                 }
                             }
                         },
                         scales: {
-                            x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 40, minRotation: 25 } },
-                            y: { type: 'linear', position: 'left', beginAtZero: true, title: { display: true, text: 'Jumlah Kejadian', font: { size: 10.5 } }, ticks: { precision: 0 } },
-                            y1: { type: 'linear', position: 'right', min: 0, max: 100, grid: { drawOnChartArea: false }, title: { display: true, text: 'Kumulatif (%)', font: { size: 10.5 } }, ticks: { callback: function(v) { return v + '%'; } } }
+                            x: { grid: { display: false }, ticks: { autoSkip: false, font: { size: 10 }, maxRotation: 42, minRotation: 25 } },
+                            y: { type: 'linear', position: 'left', beginAtZero: true, suggestedMax: maxParetoCount > 0 ? Math.ceil(maxParetoCount * 1.18) : 10, title: { display: true, text: 'Jumlah Kejadian', font: { size: 10.5 } }, ticks: { precision: 0 } },
+                            y1: { type: 'linear', position: 'right', min: 0, max: 100, grid: { drawOnChartArea: false }, title: { display: true, text: 'Kumulatif (%)', font: { size: 10.5 } }, ticks: { stepSize: 20, callback: function(v) { return v + '%'; } } }
                         }
                     }
                 });
             }
 
+            // Pareto Table Rows accessible click -> drill-down
+            document.querySelectorAll('#tableParetoPenyebab tbody tr.gg-pareto-row').forEach(function(tr) {
+                var causeKey = tr.getAttribute('data-cause');
+                if (causeKey && window.bindAccessibleAction) {
+                    window.bindAccessibleAction(tr, function() {
+                        openGgDetail('pareto_cause', causeKey, {}, tr);
+                    });
+                }
+            });
+
             // Item 8: Top 10 Gangguan Penyulang
             var ctx8 = document.getElementById('chartTop10Penyulang');
             if (ctx8) {
                 var top10Rows = <?= json_encode($top10Merged ?? [], JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) ?>;
+                var top10Data = top10Rows.map(function(r) { return Number(r.cnt_focus ?? r.cnt_a ?? 0); });
+                var maxTop10  = Math.max.apply(null, [0].concat(top10Data));
                 new Chart(ctx8, {
                     type: 'bar',
                     data: {
                         labels: top10Rows.map(function(r) { return r.nama_penyulang; }),
                         datasets: [{
                             label: 'Gangguan <?= esc($scope === "year_b" ? $yearB : ($scope === "combined" ? ($yearA . "+" . $yearB) : $yearA)) ?>',
-                            data: top10Rows.map(function(r) { return r.cnt_focus ?? r.cnt_a; }),
+                            data: top10Data,
                             backgroundColor: '#be185d',
                             borderRadius: 4
                         }]
@@ -1716,11 +2245,28 @@ $p12Rows     = $item12['rows'] ?? [];
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        layout: { padding: { top: 18 } },
-                        plugins: { legend: { display: false } },
+                        onHover: setPointerOnHover,
+                        onClick: function(evt, elements, chart) {
+                            var hits = elements && elements.length ? elements : chart.getElementsAtEventForMode(evt, 'nearest', { intersect: false }, true);
+                            if (!hits || !hits.length) return;
+                            var row = top10Rows[hits[0].index];
+                            if (row) openGgDetail('feeder', row.feeder_name || row.nama_penyulang, {}, ctx8);
+                        },
+                        layout: { padding: { top: 20 } },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    afterLabel: function(tc) {
+                                        var row = top10Rows[tc.dataIndex];
+                                        return row ? ['ULP: ' + row.nama_ulp, 'Klik batang untuk detail penyulang'] : '';
+                                    }
+                                }
+                            }
+                        },
                         scales: {
-                            x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 25 } },
-                            y: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } } }
+                            x: { grid: { display: false }, ticks: { autoSkip: false, font: { size: 10 }, maxRotation: 30 } },
+                            y: { beginAtZero: true, suggestedMax: maxTop10 > 0 ? Math.ceil(maxTop10 * 1.18) : 5, ticks: { precision: 0, font: { size: 10 } } }
                         }
                     }
                 });

@@ -294,6 +294,15 @@ class MigrateController extends BaseController
                 }
             } catch (\Throwable $eRow) {}
 
+            // Audited Reconciliation: Move legacy HAR GARDU / HAR_GARDU pelaksana labels to canonical HAR GTT
+            try {
+                $harGttSvc = new \App\Services\HarGttReconciliationService($db);
+                $harGttRes = $harGttSvc->reconcile(true, 'autoMigrate');
+                if (!empty($harGttRes['changed'])) {
+                    $executed[] = 'reconciled_har_gtt_temuan_' . (int)$harGttRes['temuan_updated'] . '_wo_' . (int)$harGttRes['work_orders_updated'];
+                }
+            } catch (\Throwable $eHarGtt) {}
+
             // FK repair removed per invariant #11: Pipeline ingestion remains LOCKED.
             // Unsafe fuzzy UPDATE (kode_asset LIKE) removed. Controlled FK repair must use
             // governed reconciliation with deterministic identity proof, not pattern matching.

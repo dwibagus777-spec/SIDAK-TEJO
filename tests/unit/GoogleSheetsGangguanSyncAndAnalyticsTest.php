@@ -610,6 +610,8 @@ class GoogleSheetsGangguanSyncAndAnalyticsTest extends CIUnitTestCase
             'chartPermTemp', 'chartUlp', 'chartPermTempUlp', 'chartRelai',
             'chartPmtRecl', 'chartParetoPenyebab', 'chartTop10Penyulang',
             'chartSebaranPeralatan', 'tableItem10', 'tableItem11', 'tableItem12',
+            'tableParetoPenyebab', 'paretoThreshold80', 'pareto_cumulative', 'pareto_cause',
+            'gangguanDrilldownModal', 'openGangguanDrilldown', 'gangguan/drilldown',
             'gangguan/sync-sheets', 'Gangguan sync timeout',
         ] as $expectedId) {
             $this->assertStringContainsString($expectedId, $html);
@@ -663,11 +665,199 @@ class GoogleSheetsGangguanSyncAndAnalyticsTest extends CIUnitTestCase
         ]);
         $this->assertStringContainsString('Belum ada data', $emptyHtml);
 
-        // Verify Dashboard Utama view source preserves shared Gangguan controls & exposes no spreadsheet secrets
+        // Verify Dashboard Utama view source preserves shared Gangguan controls & interactivity without secrets
         $dashSource = (string)file_get_contents(APPPATH . 'Views/dashboard/index.php');
-        foreach (['Sinkronkan Sheets', 'yoyYearA', 'yoyYearB', 'topFeedersGangguanTableBody', 'causeBreakdownTableBody', 'onDashboardGangguanYearPairChange'] as $marker) {
+        foreach ([
+            'Sinkronkan Sheets', 'yoyYearA', 'yoyYearB', 'topFeedersGangguanTableBody',
+            'causeBreakdownTableBody', 'onDashboardGangguanYearPairChange',
+            '_gangguan_drilldown_modal', 'openGangguanDrilldown',
+            'dash-top-feeder-row', 'dash-cause-row', 'fault_current_avg',
+        ] as $marker) {
             $this->assertStringContainsString($marker, $dashSource);
         }
         $this->assertStringNotContainsString('1bbY14--JLP4wnCh7NT7tLYK71ZkBGbZabQ3a7YaUEQg', $dashSource);
+    }
+
+    public function testParetoPrecisionEmptyHandlingExact80BoundaryAndDrilldowns(): void
+    {
+        // 5 events in 2026: A=4 (80.0% exact!), B=1 (20.0%) -> A is Vital <=80%, B starts AT 80.0% so NOT Vital!
+        // Plus case/whitespace variants ('konduktor ', 'KONDUKTOR') and truly empty cause -> 'TIDAK TERCATAT'
+        $headers = [
+            ' ', 'tanggal', 'tgl ke-', 'bln ke-', 'thn', 'GARDU INDUK', 'ULP', 'PMT-RECL/PMCB',
+            'PENYULANG', 'Nama switching', 'RECLOSER', 'TGL PMT Trip', 'JAM PMT Lepas',
+            'TGL PMT Masuk', 'JAM PMT Masuk', 'masuk total', 'LAMA PADAM', '( AMPER )', '( Kwh )',
+            'KATEGORI', 'RELE KERJA', 'fasa', 'cuaca', 'KONDISI PADAM', 'KELOMPOK GGN',
+            'JENIS GANGGUAN', 'KETERANGAN', 'TINDAK LANJUT', 'Penyebab', 'Nilai', 'PENYEBAB SESUAI KODE GANGGUAN',
+        ];
+        $rowsV1 = [
+            ['SDA', '2026-01-05', '5', '1', '2026', 'WARU', 'KRIAN', 'RECL-PMCB', 'WONOAYU', '', 'RECL PDAM KRIAN', '05-Jan-26', '06:10', '05-Jan-26', '06:22', '06:22', '00:12', '240', '100', 'Temporer', 'DGR', 'R-N', 'CERAH', 'SEBAGIAN', 'EKSTERNAL', 'GANGGUAN', 'Desc 1', 'Act 1', 'KONDUKTOR', '1', 'konduktor '],
+            ['SDA', '2026-01-06', '6', '1', '2026', 'WARU', 'KRIAN', 'RECL-PMCB', 'WONOAYU', '', 'RECL PDAM KRIAN', '06-Jan-26', '07:10', '06-Jan-26', '07:20', '07:20', '00:10', '260', '120', 'Temporer', 'DGR', 'R-N', 'CERAH', 'SEBAGIAN', 'EKSTERNAL', 'GANGGUAN', 'Desc 2', 'Act 2', 'KONDUKTOR', '1', '  KONDUKTOR'],
+            ['SDA', '2026-02-07', '7', '2', '2026', 'WARU', 'KRIAN', 'PMT', 'SAMALEAK', '', 'PMT', '07-Feb-26', '08:00', '07-Feb-26', '08:05', '08:05', '00:05', '400', '200', 'Permanen', 'OCR-INST', 'S-T', 'HUJAN', 'TOTAL', 'EKSTERNAL', 'GANGGUAN', 'Desc 3', 'Act 3', 'KONDUKTOR', '1', 'KONDUKTOR'],
+            ['SDA', '2026-02-08', '8', '2', '2026', 'BUDURAN', 'SIDOARJO KOTA', 'RECL-PMCB', 'HEAVEN LAND', '', 'PMCB BUDURAN', '08-Feb-26', '09:00', '08-Feb-26', '09:10', '09:10', '00:10', '300', '150', 'Temporer', 'DGR', 'T-N', 'CERAH', 'SEBAGIAN', 'EKSTERNAL', 'GANGGUAN', 'Desc 4', 'Act 4', 'KONDUKTOR', '1', 'KONDUKTOR'],
+            ['SDA', '2026-03-09', '9', '3', '2026', 'BUDURAN', 'SIDOARJO KOTA', 'PMT', 'HEAVEN LAND', '', 'PMT', '09-Mar-26', '10:00', '09-Mar-26', '10:15', '10:15', '00:15', '500', '250', 'Permanen', 'OCR', 'R-S', 'HUJAN', 'TOTAL', 'INTERNAL', 'GANGGUAN', 'Desc 5', 'Act 5', '', '1', ''],
+        ];
+        // Rows V2 only change non-cause column KELOMPOK GGN on row 5 -> must still trigger sync update!
+        $rowsV2 = $rowsV1;
+        $rowsV2[4][24] = 'EKSTERNAL';
+
+        $toCsv = static function (array $hdr, array $rows): string {
+            $fp = fopen('php://temp', 'r+');
+            fputcsv($fp, $hdr);
+            foreach ($rows as $r) {
+                fputcsv($fp, $r);
+            }
+            rewind($fp);
+            $out = (string)stream_get_contents($fp);
+            fclose($fp);
+            return $out;
+        };
+
+        $csv1 = $toCsv($headers, $rowsV1);
+        $csv2 = $toCsv($headers, $rowsV2);
+        $cur  = &$csv1;
+
+        $sync = new GoogleSheetsGangguanSyncService(
+            $this->conn,
+            new GangguanSync(),
+            static function () use (&$cur): string {
+                return $cur;
+            },
+            $this->statusFile
+        );
+
+        $st1 = $sync->ensureSynced(false);
+        $this->assertSame('SYNCED', $st1['status'], (string)($st1['last_error'] ?? ''));
+        $this->assertTrue($st1['changed']);
+
+        // Edit in non-cause column triggers changed = true
+        $cur = $csv2;
+        $st2 = $sync->ensureSynced(true);
+        $this->assertSame('SYNCED', $st2['status'], (string)($st2['last_error'] ?? ''));
+        $this->assertTrue($st2['changed']);
+
+        $analytics = new GangguanAnalyticsService($this->conn);
+        $ctxGlobal = $analytics->resolveContext(['year_a' => 2026, 'year_b' => 2025, 'scope' => 'year_a'], 'administrator', null);
+        $g12       = $analytics->getGangguanAnalytics12Items($ctxGlobal);
+        $pareto    = $g12['pareto_penyebab'];
+
+        $this->assertSame(5, $pareto['total']);
+        $this->assertSame(2, $pareto['category_count']);
+        $this->assertSame(100.0, $pareto['sum_pct']);
+        $this->assertSame(100.0, $pareto['final_cumulative_pct']);
+
+        // Case/whitespace collapsed -> KONDUKTOR = 4 (80.0%, Vital), empty cause -> TIDAK TERCATAT = 1 (20.0%, NOT Vital)
+        $this->assertSame('KONDUKTOR', $pareto['items'][0]['cause_raw']);
+        $this->assertSame(4, $pareto['items'][0]['count']);
+        $this->assertTrue($pareto['items'][0]['is_vital_80']);
+
+        $this->assertSame('TIDAK TERCATAT', $pareto['items'][1]['cause_raw']);
+        $this->assertSame(1, $pareto['items'][1]['count']);
+        $this->assertFalse($pareto['items'][1]['is_vital_80']);
+        $this->assertSame(1, $pareto['vital_80_count']);
+        $this->assertSame(80.0, $pareto['vital_80_pct']);
+
+        // Drill-down: pareto_cause vs pareto_cumulative rank #2
+        $dCause = $analytics->getDrilldownDetails($ctxGlobal, 'pareto_cause', 'KONDUKTOR');
+        $this->assertSame(4, $dCause['total_matching']);
+        $this->assertCount(4, $dCause['events']);
+
+        $dCum = $analytics->getDrilldownDetails($ctxGlobal, 'pareto_cumulative', 'TIDAK TERCATAT', ['rank' => 2]);
+        $this->assertSame(5, $dCum['total_matching']);
+        $this->assertCount(2, $dCum['pareto_sequence']);
+        $this->assertSame(100.0, $dCum['pareto_point']['cumulative_pct']);
+
+        // Drill-down: month + fault current min/avg/max
+        $dMonth = $analytics->getDrilldownDetails($ctxGlobal, 'month', '2', ['target_year' => 2026, 'metric_focus' => 'current']);
+        $this->assertSame(2, $dMonth['total_matching']);
+        $this->assertSame(350.0, $dMonth['breakdowns']['fault_current']['avg']);
+        $this->assertSame(300.0, $dMonth['breakdowns']['fault_current']['min']);
+        $this->assertSame(400.0, $dMonth['breakdowns']['fault_current']['max']);
+
+        // Role security check: ULP 2 user passing ?ulp_id=1 cannot escape ULP 2 scope
+        $ctxUlp2 = $analytics->resolveContext(['year_a' => 2026, 'year_b' => 2025, 'ulp_id' => 1], 'admin_ulp', 2);
+        $this->assertSame(2, $ctxUlp2['ulp_id']);
+        $dUlp2 = $analytics->getDrilldownDetails($ctxUlp2, 'pareto_cause', 'KONDUKTOR');
+        $this->assertSame(1, $dUlp2['total_matching']);
+        $this->assertSame('SIDOARJO KOTA', $dUlp2['events'][0]['ulp_name']);
+
+        // Event-weighted Ampere average check in Dashboard payload ((240+260+400+300+500)/5 = 340.0)
+        $dash = $analytics->getDashboardSyncPayload($ctxGlobal, [2026, 2025]);
+        $this->assertSame(340.0, $dash['interruptionMetricsPayload']['fault_current_avg'][2026]);
+    }
+
+    public function testEnsMultiDotParsingMonthlyAnnualReconciliationAndDrilldown(): void
+    {
+        $headers = [
+            ' ', 'tanggal', 'tgl ke-', 'bln ke-', 'thn', 'GARDU INDUK', 'ULP', 'PMT-RECL/PMCB',
+            'PENYULANG', 'Nama switching', 'RECLOSER', 'TGL PMT Trip', 'JAM PMT Lepas',
+            'TGL PMT Masuk', 'JAM PMT Masuk', 'masuk total', 'LAMA PADAM', '( AMPER )', '( Kwh )',
+            'KATEGORI', 'RELE KERJA', 'fasa', 'cuaca', 'KONDISI PADAM', 'KELOMPOK GGN',
+            'JENIS GANGGUAN', 'KETERANGAN', 'TINDAK LANJUT', 'Penyebab', 'Nilai', 'PENYEBAB SESUAI KODE GANGGUAN',
+        ];
+        // Test multi-dot ("7.914.779" => 7914.779 kWh), single-dot ("198.262"), comma-decimal ("304,264")
+        $rows = [
+            ['SDA', '2025-09-27', '27', '9', '2025', 'KRIAN', 'KRIAN', 'PMT', 'WONOAYU', '', 'PMT', '27-Sep-25', '10:00', '27-Sep-25', '11:04', '11:04', '1:04:00', '252', '7.914.779', 'Permanen', 'OCR', 'R-S', 'CERAH', 'TOTAL', 'EKSTERNAL', 'GANGGUAN', 'Sep 25 big', 'Act', 'BINATANG', '1', 'BINATANG'],
+            ['SDA', '2025-08-25', '25', '8', '2025', 'KRIAN', 'KRIAN', 'PMT', 'WONOAYU', '', 'PMT', '25-Aug-25', '08:00', '25-Aug-25', '08:02', '08:02', '0:02:00', '202', '198.262', 'Temporer', 'DGR', 'R-N', 'CERAH', 'SEBAGIAN', 'EKSTERNAL', 'GANGGUAN', 'Aug 25 dot', 'Act', 'ROW', '1', 'ROW'],
+            ['SDA', '2026-01-10', '10', '1', '2026', 'BUDURAN', 'SIDOARJO KOTA', 'RECL-PMCB', 'HEAVEN LAND', '', 'PMCB BUDURAN', '10-Jan-26', '07:00', '10-Jan-26', '07:05', '07:05', '0:05:00', '120', '304,264', 'Temporer', 'DGR', 'T-N', 'HUJAN', 'SEBAGIAN', 'EKSTERNAL', 'GANGGUAN', 'Jan 26 comma', 'Act', 'BINATANG', '1', 'BINATANG'],
+            ['SDA', '2026-01-12', '12', '1', '2026', 'KRIAN', 'KRIAN', 'PMT', 'WONOAYU', '', 'PMT', '12-Jan-26', '09:00', '12-Jan-26', '09:15', '09:15', '0:15:00', '180', '1200,50', 'Permanen', 'OCR', 'R-S', 'CERAH', 'TOTAL', 'INTERNAL', 'GANGGUAN', 'Jan 26 two', 'Act', 'MATERIAL', '1', 'MATERIAL'],
+        ];
+
+        $fp = fopen('php://temp', 'r+');
+        fputcsv($fp, $headers);
+        foreach ($rows as $r) {
+            fputcsv($fp, $r);
+        }
+        rewind($fp);
+        $csv = (string)stream_get_contents($fp);
+        fclose($fp);
+
+        $sync = new GoogleSheetsGangguanSyncService(
+            $this->conn,
+            new GangguanSync(),
+            static fn(): string => $csv,
+            $this->statusFile
+        );
+        $st = $sync->ensureSynced(true);
+        $this->assertSame('SYNCED', $st['status'], (string)($st['last_error'] ?? ''));
+
+        $analytics = new GangguanAnalyticsService($this->conn);
+        $ctx       = $analytics->resolveContext(['year_a' => 2026, 'year_b' => 2025, 'scope' => 'year_a'], 'administrator', null);
+        $g12       = $analytics->getGangguanAnalytics12Items($ctx);
+        $dash      = $analytics->getDashboardSyncPayload($ctx, [2026, 2025]);
+        $ens       = $g12['ens_analysis'];
+        $dashImp   = $dash['interruptionMetricsPayload'];
+
+        // Month 9 2025 must parse as ~7914.78 kWh (NOT 7,914,779.0!)
+        $this->assertEqualsWithDelta(7914.78, (float)$ens['monthly_b'][8], 0.02);
+        $this->assertEqualsWithDelta(198.26, (float)$ens['monthly_b'][7], 0.02);
+        $this->assertEqualsWithDelta(1504.76, (float)$ens['monthly_a'][0], 0.02);
+
+        // Monthly sums reconcile strictly to annual totals
+        $sumMoA = array_sum(array_map(static fn($v): float => (float)($v ?? 0.0), $ens['monthly_a']));
+        $sumMoB = array_sum(array_map(static fn($v): float => (float)($v ?? 0.0), $ens['monthly_b']));
+        $this->assertEqualsWithDelta($ens['total_a'], $sumMoA, 0.01);
+        $this->assertEqualsWithDelta($ens['total_b'], $sumMoB, 0.01);
+
+        // Dashboard payload strictly matches /gangguan analytics
+        $this->assertSame($ens['monthly_a'], $dashImp['ens_monthly'][2026]);
+        $this->assertSame($ens['monthly_b'], $dashImp['ens_monthly'][2025]);
+        $this->assertEqualsWithDelta($ens['total_a'], $dashImp['ens_annual'][2026]['total_kwh'], 0.01);
+        $this->assertEqualsWithDelta($ens['total_b'], $dashImp['ens_annual'][2025]['total_kwh'], 0.01);
+
+        // ENS drilldowns return sorted top-kWh events first & respect ULP boundary
+        $dEnsMo = $analytics->getDrilldownDetails($ctx, 'ens_month', '1', ['target_year' => 2026]);
+        $this->assertSame(2, $dEnsMo['total_matching']);
+        $this->assertEqualsWithDelta(1504.76, (float)$dEnsMo['breakdowns']['energy_kwh_total'], 0.02);
+        $this->assertSame('WONOAYU', $dEnsMo['events'][0]['feeder_name']); // 1200.50 > 304.264
+
+        $dEnsYr25 = $analytics->getDrilldownDetails($ctx, 'ens_year', '2025', ['target_year' => 2025]);
+        $this->assertSame(2, $dEnsYr25['total_matching']);
+        $this->assertEqualsWithDelta(8113.04, (float)$dEnsYr25['breakdowns']['energy_kwh_total'], 0.02);
+        $this->assertEqualsWithDelta(7914.779, (float)$dEnsYr25['events'][0]['energy_not_supplied_kwh'], 0.01);
+
+        $ctxUlp2 = $analytics->resolveContext(['year_a' => 2026, 'year_b' => 2025, 'ulp_id' => 1], 'admin_ulp', 2);
+        $dUlp2Ens = $analytics->getDrilldownDetails($ctxUlp2, 'ens_year', '2026', ['target_year' => 2026]);
+        $this->assertSame(1, $dUlp2Ens['total_matching']);
+        $this->assertEqualsWithDelta(304.26, (float)$dUlp2Ens['breakdowns']['energy_kwh_total'], 0.02);
     }
 }

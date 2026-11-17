@@ -51,8 +51,13 @@ class TemuanRepository extends BaseRepository
         }
 
         if (!empty($filters['pelaksana'])) {
-            $pelClean = str_replace('_', ' ', strtoupper(trim((string)$filters['pelaksana'])));
-            $builder->where('REPLACE(UPPER(TRIM(temuan.pelaksana)), "_", " ") =', $pelClean);
+            $aliases = function_exists('pelaksana_query_aliases')
+                ? pelaksana_query_aliases((string)$filters['pelaksana'])
+                : [str_replace('_', ' ', strtoupper(trim((string)$filters['pelaksana'])))];
+            $db = \Config\Database::connect();
+            $escaped = array_map(static fn(string $v): string => $db->escape($v), $aliases);
+            $colIdent = $db->protectIdentifiers('temuan.pelaksana');
+            $builder->where("REPLACE(UPPER(TRIM({$colIdent})), '_', ' ') IN (" . implode(', ', $escaped) . ")", null, false);
         }
 
         if (!empty($filters['prioritas'])) {
@@ -286,10 +291,8 @@ class TemuanRepository extends BaseRepository
                     $builder->like('temuan.pelaksana', 'PDKB');
                 } elseif ($roleLower === 'yantek') {
                     $builder->like('temuan.pelaksana', 'YANTEK');
-                } elseif (in_array($roleLower, ['har_gtt', 'har_trafo'])) {
-                    $builder->groupStart()->like('temuan.pelaksana', 'GTT')->orLike('temuan.pelaksana', 'TRAFO')->groupEnd();
-                } elseif ($roleLower === 'har_gardu') {
-                    $builder->groupStart()->like('temuan.pelaksana', 'GARDU')->orLike('temuan.pelaksana', 'HAR_GARDU')->groupEnd();
+                } elseif (in_array($roleLower, ['har_gtt', 'har_gardu', 'har_trafo'])) {
+                    $builder->groupStart()->like('temuan.pelaksana', 'GTT')->orLike('temuan.pelaksana', 'GARDU')->orLike('temuan.pelaksana', 'TRAFO')->groupEnd();
                 } elseif ($roleLower === 'har_konstruksi') {
                     $builder->groupStart()->like('temuan.pelaksana', 'KONSTRUKSI')->orLike('temuan.pelaksana', 'HAR_KONSTRUKSI')->groupEnd();
                 } elseif ($roleLower === 'har_row') {
@@ -490,10 +493,13 @@ class TemuanRepository extends BaseRepository
                 $builder->where('ulp_id', $ulpIdFilter);
             }
 
+            $harGttAliases = function_exists('pelaksana_query_aliases')
+                ? pelaksana_query_aliases('HAR GTT')
+                : ['HAR GTT', 'HAR GARDU'];
             $roleMap = [
                 'pdkb'           => 'PDKB',
-                'har_gardu'      => ['HAR GTT', 'HAR GARDU'],
-                'har_gtt'        => ['HAR GTT', 'HAR GARDU'],
+                'har_gardu'      => $harGttAliases,
+                'har_gtt'        => $harGttAliases,
                 'har_konstruksi' => 'HAR KONSTRUKSI',
                 'har_row'        => 'HAR ROW',
                 'yantek'         => 'YANTEK'
@@ -509,7 +515,7 @@ class TemuanRepository extends BaseRepository
             $builder->select("
                 COUNT(*) AS total,
                 SUM(CASE WHEN pelaksana = 'PDKB' THEN 1 ELSE 0 END) AS pdkb,
-                SUM(CASE WHEN pelaksana IN ('HAR GTT', 'HAR GARDU') THEN 1 ELSE 0 END) AS har_gardu,
+                SUM(CASE WHEN pelaksana IN ('HAR GTT', 'HAR GARDU', 'HAR_GTT', 'HAR_GARDU') THEN 1 ELSE 0 END) AS har_gtt,
                 SUM(CASE WHEN pelaksana = 'HAR KONSTRUKSI' THEN 1 ELSE 0 END) AS har_konstruksi,
                 SUM(CASE WHEN pelaksana = 'HAR ROW' THEN 1 ELSE 0 END) AS har_row,
                 SUM(CASE WHEN pelaksana = 'HAR CRANE' THEN 1 ELSE 0 END) AS har_crane,
@@ -522,12 +528,13 @@ class TemuanRepository extends BaseRepository
             ");
 
             $row = self::safeRow($builder, 'TemuanRepository::getDashboardStats') ?: [];
+            $harGttTotal = (int)($row['har_gtt'] ?? 0);
 
             return [
                 'total'          => (int)($row['total'] ?? 0),
                 'pdkb'           => (int)($row['pdkb'] ?? 0),
-                'har_gardu'      => (int)($row['har_gardu'] ?? 0),
-                'har_gtt'        => (int)($row['har_gtt'] ?? 0),
+                'har_gardu'      => $harGttTotal,
+                'har_gtt'        => $harGttTotal,
                 'har_konstruksi' => (int)($row['har_konstruksi'] ?? 0),
                 'har_row'        => (int)($row['har_row'] ?? 0),
                 'har_crane'      => (int)($row['har_crane'] ?? 0),
@@ -730,10 +737,13 @@ class TemuanRepository extends BaseRepository
             if (!in_array($roleLower, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3']) && !empty($ulpIdFilter)) {
                 $builder->where('temuan.ulp_id', $ulpIdFilter);
             }
+            $harGttAliases = function_exists('pelaksana_query_aliases')
+                ? pelaksana_query_aliases('HAR GTT')
+                : ['HAR GTT', 'HAR GARDU'];
             $roleMap = [
                 'pdkb'           => 'PDKB',
-                'har_gardu'      => ['HAR GTT', 'HAR GARDU'],
-                'har_gtt'        => ['HAR GTT', 'HAR GARDU'],
+                'har_gardu'      => $harGttAliases,
+                'har_gtt'        => $harGttAliases,
                 'har_konstruksi' => 'HAR KONSTRUKSI',
                 'har_row'        => 'HAR ROW',
                 'yantek'         => 'YANTEK'

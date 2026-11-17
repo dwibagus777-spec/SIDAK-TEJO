@@ -1109,6 +1109,7 @@ $routes->match(['GET', 'POST'], 'api/transline-audit-crossfeeder', 'Api::transli
     $routes->post('gangguan/preview-excel', 'Gangguan::previewExcel');
     $routes->post('gangguan/import-excel', 'Gangguan::importExcel');
     $routes->post('gangguan/delete/(:num)', 'Gangguan::delete/$1');
+    $routes->get('gangguan/drilldown', 'Gangguan::drilldown');
     $routes->get('gangguan/api-feeders/(:num)', 'Gangguan::apiFeedersByUlp/$1');
 
 

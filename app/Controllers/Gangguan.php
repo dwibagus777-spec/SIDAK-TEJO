@@ -275,6 +275,8 @@ class Gangguan extends BaseController
         }
 
         $cleanUlpName = trim(str_ireplace('ULP ', '', (string)($ulp['nama_ulp'] ?? '')));
+        $rawCauseInput = trim((string)$this->request->getPost('cause_raw'));
+        $causeResolved = (new \App\Services\CauseCodeResolutionService($db))->resolveCause($rawCauseInput !== '' ? $rawCauseInput : 'TIDAK TERCATAT');
 
         $data = [
             'batch_id'                 => 0,
@@ -299,7 +301,10 @@ class Gangguan extends BaseController
             'energy_not_supplied_kwh'  => $this->request->getPost('energy_not_supplied_kwh') !== '' ? (float)$this->request->getPost('energy_not_supplied_kwh') : null,
             'interruption_category'    => strtoupper(trim((string)$this->request->getPost('interruption_category'))) ?: 'TEMPORARY',
             'interruption_group'       => 'GGN_PENYULANG',
-            'cause_raw'                => trim((string)$this->request->getPost('cause_raw')),
+            'cause_raw'                => $rawCauseInput !== '' ? strtoupper($rawCauseInput) : 'TIDAK TERCATAT',
+            'cause_canonical_code'     => $causeResolved['cause_canonical_code'] ?? 'CAUSE_UNKNOWN_UNDER_INVESTIGATION',
+            'cause_category'           => $causeResolved['cause_category'] ?? 'UNKNOWN_INVESTIGATION',
+            'cause_mapping_status'     => $causeResolved['cause_mapping_status'] ?? 'RESOLVED',
             'field_narrative_raw'      => trim((string)$this->request->getPost('field_narrative_raw')),
             'restoration_action_raw'   => trim((string)$this->request->getPost('restoration_action_raw')),
             'extracted_zone_section'   => trim((string)$this->request->getPost('extracted_zone_section')),
@@ -488,6 +493,48 @@ class Gangguan extends BaseController
         $this->interruptionModel->delete($id);
 
         return redirect()->to(site_url('gangguan'))->with('success', 'Data gangguan berhasil dihapus.');
+    }
+
+    public function drilldown()
+    {
+        $session   = session();
+        $role      = strtolower((string)$session->get('user_role'));
+        $userUlpId = $session->get('user_ulp_id') ? (int)$session->get('user_ulp_id') : null;
+        $canManage = check_role(['administrator', 'admin', 'admin_pusat', 'admin_ulp', 'supervisor_up3', 'supervisor_ulp', 'inspeksi']);
+
+        $forceRefresh = $canManage && ((string)$this->request->getGet('refresh_sync') === '1');
+        $syncStatus   = $this->syncService->ensureSynced($forceRefresh);
+
+        $params    = $this->request->getGet();
+        $dimension = strtolower(trim((string)($params['dimension'] ?? '')));
+        $key       = trim((string)($params['key'] ?? ''));
+
+        if ($dimension === '' || $key === '') {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Parameter detail grafik tidak lengkap.',
+            ])->setStatusCode(400);
+        }
+
+        $ctx    = $this->analyticsService->resolveContext($params, $role, $userUlpId);
+        $detail = $this->analyticsService->getDrilldownDetails($ctx, $dimension, $key, [
+            'target_year' => isset($params['target_year']) && $params['target_year'] !== '' ? (int)$params['target_year'] : null,
+            'sub_key'     => isset($params['sub_key']) ? trim((string)$params['sub_key']) : null,
+            'rank'        => isset($params['rank']) && $params['rank'] !== '' ? (int)$params['rank'] : null,
+            'metric_focus'=> isset($params['metric_focus']) ? trim((string)$params['metric_focus']) : null,
+            'limit'       => 100,
+        ]);
+
+        return $this->response->setJSON([
+            'status'      => 'success',
+            'sync_status' => [
+                'status'         => $syncStatus['status'] ?? 'STANDBY',
+                'last_synced_at' => $syncStatus['last_synced_at'] ?? null,
+                'row_count'      => (int)($syncStatus['row_count'] ?? 0),
+                'source_label'   => $syncStatus['source_label'] ?? 'Google Sheets',
+            ],
+            'data' => $detail,
+        ]);
     }
 
     public function apiFeedersByUlp($ulpId)

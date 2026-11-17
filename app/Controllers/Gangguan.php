@@ -518,11 +518,15 @@ class Gangguan extends BaseController
 
         $ctx    = $this->analyticsService->resolveContext($params, $role, $userUlpId);
         $detail = $this->analyticsService->getDrilldownDetails($ctx, $dimension, $key, [
-            'target_year' => isset($params['target_year']) && $params['target_year'] !== '' ? (int)$params['target_year'] : null,
-            'sub_key'     => isset($params['sub_key']) ? trim((string)$params['sub_key']) : null,
-            'rank'        => isset($params['rank']) && $params['rank'] !== '' ? (int)$params['rank'] : null,
-            'metric_focus'=> isset($params['metric_focus']) ? trim((string)$params['metric_focus']) : null,
-            'limit'       => 100,
+            'target_year'    => isset($params['target_year']) && $params['target_year'] !== '' ? (int)$params['target_year'] : null,
+            'sub_key'        => isset($params['sub_key']) ? trim((string)$params['sub_key']) : null,
+            'rank'           => isset($params['rank']) && $params['rank'] !== '' ? (int)$params['rank'] : null,
+            'metric_focus'   => isset($params['metric_focus']) ? trim((string)$params['metric_focus']) : null,
+            'offset'         => isset($params['offset']) && $params['offset'] !== '' ? max(0, (int)$params['offset']) : 0,
+            'limit'          => isset($params['limit']) && (int)$params['limit'] > 0 ? max(10, min(1000, (int)$params['limit'])) : 100,
+            'search'         => isset($params['search']) ? trim((string)$params['search']) : '',
+            'event_category' => isset($params['event_category']) ? trim((string)$params['event_category']) : '',
+            'event_ulp'      => isset($params['event_ulp']) ? trim((string)$params['event_ulp']) : '',
         ]);
 
         return $this->response->setJSON([

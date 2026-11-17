@@ -1803,6 +1803,9 @@
                     <button type="button" class="btn btn-xs rounded-pill px-2.5 py-0.5 fw-semibold btn-light text-dark" id="btnMetricCurrent" onclick="switchYoYMetric('current', this)">
                         <i class="fas fa-bolt me-1"></i>Arus Gangguan (A)
                     </button>
+                    <button type="button" class="btn btn-xs rounded-pill px-2.5 py-0.5 fw-semibold btn-light text-dark" id="btnMetricCategory" onclick="switchYoYMetric('category', this)">
+                        <i class="fas fa-circle-half-stroke me-1"></i>Permanen &bull; Temporer
+                    </button>
                     <button type="button" class="btn btn-xs rounded-pill px-2.5 py-0.5 fw-semibold btn-light text-dark" id="btnMetricDevice" onclick="switchYoYMetric('device', this)">
                         <i class="fas fa-toggle-on me-1"></i>PMT &bull; RECL/PMCB
                     </button>
@@ -1840,6 +1843,55 @@
             </div>
             <div class="text-muted mt-1 w-100 text-end" style="font-size: 10.5px;">
                 <i class="fas fa-hand-pointer me-1" aria-hidden="true"></i>Klik titik atau batang pada grafik untuk melihat rincian kejadian gangguan.
+            </div>
+
+            <!-- Permanen vs Temporer & Rasio PMT vs REC/PMCB Sub-Panel inside Card 6C (100% parity with /gangguan) -->
+            <div class="w-100 mt-3 pt-3 border-top" id="dashboardCatSwPanel">
+                <div class="row g-3 align-items-stretch">
+                    <div class="col-lg-6 col-12">
+                        <div class="border rounded-3 p-2.5 bg-light bg-opacity-50 h-100 d-flex flex-column justify-content-between">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-1 mb-1.5">
+                                <span class="fw-bold text-dark" style="font-size: 12px;"><i class="fas fa-circle-half-stroke text-danger me-1" aria-hidden="true"></i>Permanen vs Temporer</span>
+                                <span class="badge bg-white text-secondary border rounded-pill font-monospace" id="dashPermTempFocusBadge" style="font-size: 10px;">Tahun A</span>
+                            </div>
+                            <div class="position-relative w-100" style="height: 215px;">
+                                <canvas id="dashboardPermTempChart" role="img" aria-label="Grafik donat gangguan permanen vs temporer di Dashboard"></canvas>
+                                <div id="dashPermTempEmptyOverlay" class="d-none position-absolute top-50 start-50 translate-middle text-center p-2 bg-white bg-opacity-90 rounded border shadow-sm small text-muted" style="max-width: 90%; z-index: 5;">
+                                    Belum ada data kategori pada periode ini.
+                                </div>
+                            </div>
+                            <div class="row g-2 mt-2 text-center" style="font-size: 11.5px;">
+                                <div class="col-6">
+                                    <button type="button" id="btnDashCatTemp" class="btn btn-light border w-100 p-2 rounded-3 d-flex flex-column align-items-center justify-content-center">
+                                        <span class="text-muted d-block" style="font-size: 10.5px;">Temporer</span>
+                                        <div><strong class="fs-6 text-dark font-monospace" id="dashCatTempCount">0</strong> <span class="text-muted small font-monospace" id="dashCatTempPct">(0,0%)</span></div>
+                                    </button>
+                                </div>
+                                <div class="col-6">
+                                    <button type="button" id="btnDashCatPerm" class="btn btn-danger-subtle border border-danger-subtle w-100 p-2 rounded-3 d-flex flex-column align-items-center justify-content-center">
+                                        <span class="text-danger d-block" style="font-size: 10.5px;">Permanen</span>
+                                        <div><strong class="fs-6 text-danger font-monospace" id="dashCatPermCount">0</strong> <span class="text-danger small font-monospace" id="dashCatPermPct">(0,0%)</span></div>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 col-12">
+                        <div class="border rounded-3 p-2.5 bg-light bg-opacity-50 h-100 d-flex flex-column justify-content-between">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-1 mb-1.5">
+                                <span class="fw-bold text-dark" style="font-size: 12px;"><i class="fas fa-toggle-on text-info me-1" aria-hidden="true"></i>Rasio PMT vs REC/PMCB</span>
+                                <span class="badge bg-white text-secondary border rounded-pill font-monospace" id="dashPmtReclFocusBadge" style="font-size: 10px;">Tahun A</span>
+                            </div>
+                            <div class="position-relative w-100" style="height: 215px;">
+                                <canvas id="dashboardPmtReclChart" role="img" aria-label="Grafik donat rasio gangguan PMT vs REC/PMCB di Dashboard"></canvas>
+                                <div id="dashPmtReclEmptyOverlay" class="d-none position-absolute top-50 start-50 translate-middle text-center p-2 bg-white bg-opacity-90 rounded border shadow-sm small text-muted" style="max-width: 90%; z-index: 5;">
+                                    Belum ada data rasio PMT vs REC/PMCB.
+                                </div>
+                            </div>
+                            <div class="d-flex flex-column gap-1.5 mt-2" id="dashSwSummaryList" style="font-size: 11.5px;"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- ENS (kWh) Reliability Sub-Panel inside Card 6C (synced to Tahun A & Tahun B) -->
@@ -3372,6 +3424,158 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.ensAnnualChartInstance  = rendered.annualChart;
                 }
             }
+
+            // Render Dashboard Permanen vs Temporer & Rasio PMT vs REC/PMCB Doughnuts (shared with /gangguan)
+            if (window.renderSidaktejoDoughnutChart) {
+                var catMap     = payload.category_summary || {};
+                var swMap      = payload.switching_summary || {};
+                var fCtx       = payload.filter_context || {};
+                var filterDesc = (fCtx.ulp_label || 'Semua ULP') + ' • ' + (fCtx.penyulang_label || 'Semua Penyulang');
+
+                var catEntryA  = catMap[yrA] || { TEMPORARY: 0, PERMANENT: 0, UNKNOWN: 0, total: 0, temp_pct: 0, perm_pct: 0, unk_pct: 0 };
+                var catEntryB  = catMap[yrB] || { TEMPORARY: 0, PERMANENT: 0, UNKNOWN: 0, total: 0, temp_pct: 0, perm_pct: 0, unk_pct: 0 };
+                var focusYr    = (scopeFilterVal === 'year_b') ? yrB : ((scopeFilterVal === 'combined') ? null : yrA);
+                var focusLbl   = (scopeFilterVal === 'year_b')
+                    ? ('Tahun ' + yrB)
+                    : ((scopeFilterVal === 'combined' && yrA !== yrB) ? ('Gabungan ' + yrA + ' & ' + yrB) : ('Tahun ' + yrA));
+
+                var catFocus;
+                if (scopeFilterVal === 'year_b') {
+                    catFocus = catEntryB;
+                } else if (scopeFilterVal === 'combined' && yrA !== yrB) {
+                    var cTemp = Number(catEntryA.TEMPORARY || 0) + Number(catEntryB.TEMPORARY || 0);
+                    var cPerm = Number(catEntryA.PERMANENT || 0) + Number(catEntryB.PERMANENT || 0);
+                    var cUnk  = Number(catEntryA.UNKNOWN || 0) + Number(catEntryB.UNKNOWN || 0);
+                    var cTot  = cTemp + cPerm + cUnk;
+                    catFocus = {
+                        TEMPORARY: cTemp,
+                        PERMANENT: cPerm,
+                        UNKNOWN: cUnk,
+                        total: cTot,
+                        temp_pct: cTot > 0 ? Number(((cTemp / cTot) * 100).toFixed(1)) : 0,
+                        perm_pct: cTot > 0 ? Number(((cPerm / cTot) * 100).toFixed(1)) : 0,
+                        unk_pct: cTot > 0 ? Number(((cUnk / cTot) * 100).toFixed(1)) : 0
+                    };
+                } else {
+                    catFocus = catEntryA;
+                }
+
+                var bPt = document.getElementById('dashPermTempFocusBadge');
+                var bSw = document.getElementById('dashPmtReclFocusBadge');
+                if (bPt) bPt.textContent = focusLbl;
+                if (bSw) bSw.textContent = focusLbl;
+
+                var elTempCnt = document.getElementById('dashCatTempCount');
+                var elTempPct = document.getElementById('dashCatTempPct');
+                var elPermCnt = document.getElementById('dashCatPermCount');
+                var elPermPct = document.getElementById('dashCatPermPct');
+                if (elTempCnt) elTempCnt.textContent = Number(catFocus.TEMPORARY || 0).toLocaleString('id-ID');
+                if (elTempPct) elTempPct.textContent = '(' + Number(catFocus.temp_pct || 0).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%)';
+                if (elPermCnt) elPermCnt.textContent = Number(catFocus.PERMANENT || 0).toLocaleString('id-ID');
+                if (elPermPct) elPermPct.textContent = '(' + Number(catFocus.perm_pct || 0).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%)';
+
+                var btnCatTemp = document.getElementById('btnDashCatTemp');
+                var btnCatPerm = document.getElementById('btnDashCatPerm');
+                if (btnCatTemp) btnCatTemp.onclick = function() { triggerEnsDrilldown('category', 'TEMPORARY', focusYr, btnCatTemp); };
+                if (btnCatPerm) btnCatPerm.onclick = function() { triggerEnsDrilldown('category', 'PERMANENT', focusYr, btnCatPerm); };
+
+                var ctxDashPt = document.getElementById('dashboardPermTempChart');
+                var ovDashPt  = document.getElementById('dashPermTempEmptyOverlay');
+                if (ovDashPt) ovDashPt.classList.toggle('d-none', Number(catFocus.total || 0) > 0);
+                if (ctxDashPt) {
+                    window.dashboardPermTempChartInstance = window.renderSidaktejoDoughnutChart({
+                        canvas: ctxDashPt,
+                        labels: ['Temporer', 'Permanen'],
+                        keys: ['TEMPORARY', 'PERMANENT'],
+                        counts: [Number(catFocus.TEMPORARY || 0), Number(catFocus.PERMANENT || 0)],
+                        pcts: [Number(catFocus.temp_pct || 0), Number(catFocus.perm_pct || 0)],
+                        total: Number(catFocus.total || 0),
+                        colors: ['#64748b', '#ef4444'],
+                        labelInks: ['#334155', '#b91c1c'],
+                        yearA: yrA,
+                        yearB: yrB,
+                        yearACounts: [Number(catEntryA.TEMPORARY || 0), Number(catEntryA.PERMANENT || 0)],
+                        yearBCounts: [Number(catEntryB.TEMPORARY || 0), Number(catEntryB.PERMANENT || 0)],
+                        focusLabel: focusLbl,
+                        filterSummary: filterDesc,
+                        cutout: '56%',
+                        onSliceClick: function(k, idx, triggerEl) {
+                            triggerEnsDrilldown('category', k, focusYr, triggerEl || ctxDashPt);
+                        }
+                    });
+                }
+
+                // Switching Type Doughnut (Rasio PMT vs REC/PMCB)
+                var swEntryA = swMap[yrA] || { rows: [], focus_total: 0 };
+                var swEntryB = swMap[yrB] || { rows: [], focus_total: 0 };
+                var mapByType = function(entry) {
+                    var m = {};
+                    (entry.rows || []).forEach(function(r) { m[r.type] = Number(r.focus || 0); });
+                    return m;
+                };
+                var mSwA = mapByType(swEntryA);
+                var mSwB = mapByType(swEntryB);
+                var swTypes = ['RECL-PMCB', 'PMT'];
+                var swRows = swTypes.map(function(t) {
+                    var cA = Number(mSwA[t] || 0);
+                    var cB = Number(mSwB[t] || 0);
+                    var cF = (scopeFilterVal === 'year_b') ? cB : ((scopeFilterVal === 'combined' && yrA !== yrB) ? (cA + cB) : cA);
+                    return {
+                        type: t,
+                        label: t === 'PMT' ? 'PMT (Gardu Induk)' : 'REC / PMCB (Jaringan JTM)',
+                        focus: cF,
+                        year_a: cA,
+                        year_b: cB
+                    };
+                }).sort(function(a, b) { return b.focus - a.focus; });
+
+                var swTotF = swRows.reduce(function(acc, r) { return acc + r.focus; }, 0);
+                swRows.forEach(function(r) {
+                    r.focus_pct = swTotF > 0 ? Number(((r.focus / swTotF) * 100).toFixed(1)) : 0;
+                });
+
+                var swListEl = document.getElementById('dashSwSummaryList');
+                if (swListEl) {
+                    swListEl.innerHTML = swRows.map(function(r) {
+                        var pctTxt = r.focus_pct.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+                        return '<button type="button" class="btn btn-light border w-100 d-flex justify-content-between align-items-center px-2.5 py-1.5 rounded-2 text-start dash-sw-drill-btn" data-sw-key="' + r.type + '">' +
+                            '<span class="fw-semibold text-dark">' + r.label + '</span>' +
+                            '<span class="font-monospace"><strong>' + r.focus.toLocaleString('id-ID') + '</strong> <span class="text-muted">(' + pctTxt + '%)</span></span>' +
+                        '</button>';
+                    }).join('');
+                    swListEl.querySelectorAll('.dash-sw-drill-btn').forEach(function(btn) {
+                        btn.onclick = function() {
+                            triggerEnsDrilldown('switching_type', btn.getAttribute('data-sw-key'), focusYr, btn);
+                        };
+                    });
+                }
+
+                var ctxDashSw = document.getElementById('dashboardPmtReclChart');
+                var ovDashSw  = document.getElementById('dashPmtReclEmptyOverlay');
+                if (ovDashSw) ovDashSw.classList.toggle('d-none', swTotF > 0);
+                if (ctxDashSw) {
+                    window.dashboardPmtReclChartInstance = window.renderSidaktejoDoughnutChart({
+                        canvas: ctxDashSw,
+                        labels: swRows.map(function(r) { return r.label; }),
+                        keys: swRows.map(function(r) { return r.type; }),
+                        counts: swRows.map(function(r) { return r.focus; }),
+                        pcts: swRows.map(function(r) { return r.focus_pct; }),
+                        total: swTotF,
+                        colors: ['#0284c7', '#f59e0b', '#64748b'],
+                        labelInks: ['#0369a1', '#b45309', '#334155'],
+                        yearA: yrA,
+                        yearB: yrB,
+                        yearACounts: swRows.map(function(r) { return r.year_a; }),
+                        yearBCounts: swRows.map(function(r) { return r.year_b; }),
+                        focusLabel: focusLbl,
+                        filterSummary: filterDesc,
+                        cutout: '55%',
+                        onSliceClick: function(k, idx, triggerEl) {
+                            triggerEnsDrilldown('switching_type', k, focusYr, triggerEl || ctxDashSw);
+                        }
+                    });
+                }
+            }
         } catch (eEns) {
             console.warn('[Dashboard] updateEnsComparisonCharts error:', eEns);
         }
@@ -3704,6 +3908,51 @@ document.addEventListener('DOMContentLoaded', function() {
                 borderWidth: 0
             });
 
+        } else if (metric === 'category') {
+            chartType = 'bar';
+            indexAxis = 'x';
+            yTitle = 'Gangguan Permanen vs Temporer';
+            var catMapM = (window.yoyPayload && window.yoyPayload.category_summary) ? window.yoyPayload.category_summary : {};
+            var cA = catMapM[yrA] || { TEMPORARY: 0, PERMANENT: 0, total: 0, temp_pct: 0, perm_pct: 0 };
+            var cB = catMapM[yrB] || { TEMPORARY: 0, PERMANENT: 0, total: 0, temp_pct: 0, perm_pct: 0 };
+            labels = ['Temporer', 'Permanen'];
+
+            var barDataA = [Number(cA.TEMPORARY || 0), Number(cA.PERMANENT || 0)];
+            var barDataB = [Number(cB.TEMPORARY || 0), Number(cB.PERMANENT || 0)];
+            var totalA = Number(cA.total || (barDataA[0] + barDataA[1]));
+            var totalB = Number(cB.total || (barDataB[0] + barDataB[1]));
+            if (totalA > 0 || totalB > 0) hasValidData = true;
+            maxVal = Math.max(getArrayMax(barDataA), getArrayMax(barDataB));
+
+            var badgeA = document.getElementById('badgeYearA');
+            var badgeB = document.getElementById('badgeYearB');
+            var badgeDiff = document.getElementById('badgeDiffYoY');
+            if (badgeA) badgeA.textContent = yrA + ': Temp ' + barDataA[0] + ' (' + Number(cA.temp_pct || 0).toFixed(1) + '%) | Perm ' + barDataA[1] + ' (' + Number(cA.perm_pct || 0).toFixed(1) + '%)';
+            if (badgeB) badgeB.textContent = yrB + ': Temp ' + barDataB[0] + ' (' + Number(cB.temp_pct || 0).toFixed(1) + '%) | Perm ' + barDataB[1] + ' (' + Number(cB.perm_pct || 0).toFixed(1) + '%)';
+            if (badgeDiff) {
+                badgeDiff.textContent = 'Metrik: Permanen vs Temporer';
+                badgeDiff.className = 'badge border rounded-pill px-2 py-1 fw-bold font-monospace bg-light text-dark';
+            }
+
+            datasets.push({
+                label: 'Tahun ' + yrA + ' (Total: ' + totalA + ')',
+                data: barDataA,
+                sidaktejoTotal: totalA,
+                sidaktejoPcts: [Number(cA.temp_pct || 0), Number(cA.perm_pct || 0)],
+                backgroundColor: '#dc2626',
+                borderRadius: 4,
+                borderWidth: 0
+            });
+            datasets.push({
+                label: 'Tahun ' + yrB + ' (Total: ' + totalB + ')',
+                data: barDataB,
+                sidaktejoTotal: totalB,
+                sidaktejoPcts: [Number(cB.temp_pct || 0), Number(cB.perm_pct || 0)],
+                backgroundColor: '#0284c7',
+                borderRadius: 4,
+                borderWidth: 0
+            });
+
         } else if (metric === 'device') {
             chartType = 'bar';
             indexAxis = 'x';
@@ -3726,14 +3975,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
             var totalA = barDataA.reduce(function(a, b) { return a + b; }, 0);
             var totalB = barDataB.reduce(function(a, b) { return a + b; }, 0);
+            var pctsDevA = barDataA.map(function(v) { return totalA > 0 ? Number(((v / totalA) * 100).toFixed(1)) : 0; });
+            var pctsDevB = barDataB.map(function(v) { return totalB > 0 ? Number(((v / totalB) * 100).toFixed(1)) : 0; });
             if (totalA > 0 || totalB > 0) hasValidData = true;
             maxVal = Math.max(getArrayMax(barDataA), getArrayMax(barDataB));
 
             var badgeA = document.getElementById('badgeYearA');
             var badgeB = document.getElementById('badgeYearB');
             var badgeDiff = document.getElementById('badgeDiffYoY');
-            if (badgeA) badgeA.textContent = yrA + ': PMT ' + barDataA[0] + ' | RECL ' + barDataA[1];
-            if (badgeB) badgeB.textContent = yrB + ': PMT ' + barDataB[0] + ' | RECL ' + barDataB[1];
+            if (badgeA) badgeA.textContent = yrA + ': PMT ' + barDataA[0] + ' (' + pctsDevA[0].toFixed(1) + '%) | RECL ' + barDataA[1] + ' (' + pctsDevA[1].toFixed(1) + '%)';
+            if (badgeB) badgeB.textContent = yrB + ': PMT ' + barDataB[0] + ' (' + pctsDevB[0].toFixed(1) + '%) | RECL ' + barDataB[1] + ' (' + pctsDevB[1].toFixed(1) + '%)';
             if (badgeDiff) {
                 badgeDiff.textContent = 'Metrik: PMT vs RECL/PMCB';
                 badgeDiff.className = 'badge border rounded-pill px-2 py-1 fw-bold font-monospace bg-light text-dark';
@@ -3742,6 +3993,8 @@ document.addEventListener('DOMContentLoaded', function() {
             datasets.push({
                 label: 'Tahun ' + yrA + ' (Total: ' + totalA + ')',
                 data: barDataA,
+                sidaktejoTotal: totalA,
+                sidaktejoPcts: pctsDevA,
                 backgroundColor: '#dc2626',
                 borderRadius: 4,
                 borderWidth: 0
@@ -3749,6 +4002,8 @@ document.addEventListener('DOMContentLoaded', function() {
             datasets.push({
                 label: 'Tahun ' + yrB + ' (Total: ' + totalB + ')',
                 data: barDataB,
+                sidaktejoTotal: totalB,
+                sidaktejoPcts: pctsDevB,
                 backgroundColor: '#0284c7',
                 borderRadius: 4,
                 borderWidth: 0
@@ -3787,7 +4042,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         var numVal = Number(rawVal);
                         if (numVal <= 0 && metric !== 'trips') return;
 
-                        var txt = (metric === 'current' && numVal > 0) ? numVal.toFixed(1) + 'A' : Math.round(numVal).toLocaleString('id-ID');
+                        var txt = (metric === 'current' && numVal > 0)
+                            ? numVal.toFixed(1) + 'A'
+                            : ((metric === 'device' || metric === 'category') && Array.isArray(ds.sidaktejoPcts) && ds.sidaktejoPcts[ptIdx] !== undefined)
+                                ? (Math.round(numVal).toLocaleString('id-ID') + ' (' + Number(ds.sidaktejoPcts[ptIdx]).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%)')
+                                : Math.round(numVal).toLocaleString('id-ID');
 
                         c.lineWidth = 3;
                         c.strokeStyle = 'rgba(255, 255, 255, 0.95)';
@@ -3843,13 +4102,24 @@ document.addEventListener('DOMContentLoaded', function() {
                     var hit = hits[0];
                     var yrTarget = (hit.datasetIndex === 1) ? yrB : yrA;
                     var ctxEl = document.getElementById('cumulativeGangguanChart');
-                    var ulpFilterVal = <?= !empty($selectedUlpId) ? (int)$selectedUlpId : 'null' ?>;
+                    var ulpFilterVal       = <?= !empty($selectedUlpId) ? (int)$selectedUlpId : 'null' ?>;
+                    var penyulangFilterVal = <?= !empty($gangguanPenyulangId) ? (int)$gangguanPenyulangId : 'null' ?>;
+                    var scopeFilterVal     = <?= json_encode($gangguanScope ?? 'year_a') ?>;
                     var sendDetail = function(dimension, key, extra) {
                         if (!window.openGangguanDrilldown) return;
                         window.openGangguanDrilldown({
                             endpoint: '<?= site_url('gangguan/drilldown') ?>',
                             triggerEl: ctxEl,
-                            params: Object.assign({ year_a: yrA, year_b: yrB, ulp_id: ulpFilterVal, target_year: yrTarget, dimension: dimension, key: key }, extra || {})
+                            params: Object.assign({
+                                year_a: yrA,
+                                year_b: yrB,
+                                scope: scopeFilterVal,
+                                ulp_id: ulpFilterVal,
+                                penyulang_id: penyulangFilterVal,
+                                target_year: yrTarget,
+                                dimension: dimension,
+                                key: key
+                            }, extra || {})
                         });
                     };
                     if (metric === 'trips') {
@@ -3860,6 +4130,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         sendDetail('cause_category', currentCauseScores[hit.index].cat);
                     } else if (metric === 'relay' && currentRelayScores[hit.index]) {
                         sendDetail('relay', currentRelayScores[hit.index].type);
+                    } else if (metric === 'category') {
+                        var catKeyBar = (hit.index === 1) ? 'PERMANENT' : 'TEMPORARY';
+                        sendDetail('category', catKeyBar);
                     } else if (metric === 'device' && currentDevKeys[hit.index]) {
                         sendDetail('switching_type', currentDevKeys[hit.index]);
                     }
@@ -3899,7 +4172,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                 var val = indexAxis === 'y' ? c.parsed.x : c.parsed.y;
                                 if (val === null || typeof val === 'undefined') return c.dataset.label + ': Tidak Ada Data';
                                 var u = metric === 'current' ? ' A' : ' kejadian';
-                                return c.dataset.label.split(' (')[0] + ': ' + Number(val).toLocaleString('id-ID') + u;
+                                var pctSuffix = '';
+                                if ((metric === 'device' || metric === 'category') && Array.isArray(c.dataset.sidaktejoPcts) && c.dataset.sidaktejoPcts[c.dataIndex] !== undefined) {
+                                    pctSuffix = ' (' + Number(c.dataset.sidaktejoPcts[c.dataIndex]).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%)';
+                                }
+                                return c.dataset.label.split(' (')[0] + ': ' + Number(val).toLocaleString('id-ID') + u + pctSuffix;
                             },
                             afterBody: function() {
                                 return ['Klik elemen grafik untuk melihat rincian kejadian'];

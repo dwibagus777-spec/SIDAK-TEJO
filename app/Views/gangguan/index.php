@@ -379,24 +379,33 @@ $fullYearBTot = (int)($item3['year_b_total'] ?? 0);
             </div>
             <div class="card-body d-flex flex-column justify-content-between">
                 <?php if ($focusCat['total'] > 0): ?>
-                    <div style="height: 195px; position: relative;">
-                        <canvas id="chartPermTemp"></canvas>
+                    <div style="height: 215px; position: relative;">
+                        <canvas id="chartPermTemp" role="img" aria-label="Grafik donat gangguan permanen vs temporer"></canvas>
                     </div>
                     <div class="row g-2 mt-2 text-center" style="font-size: 12px;">
                         <div class="col-6">
-                            <div class="p-2 rounded-3 bg-light border">
+                            <div class="p-2 rounded-3 bg-light border gg-cat-drill-card" data-cat-key="TEMPORARY" title="Klik untuk melihat rincian kejadian Temporer">
                                 <span class="text-muted d-block" style="font-size: 10.5px;">Temporer</span>
-                                <strong class="fs-6 text-dark font-monospace"><?= number_format($focusCat['TEMPORARY']) ?></strong>
-                                <span class="text-muted small">(<?= number_format($focusCat['temp_pct'], 1) ?>%)</span>
+                                <strong class="fs-6 text-dark font-monospace"><?= number_format((int)$focusCat['TEMPORARY'], 0, ',', '.') ?></strong>
+                                <span class="text-muted small font-monospace">(<?= number_format((float)$focusCat['temp_pct'], 1, ',', '.') ?>%)</span>
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="p-2 rounded-3 bg-danger-subtle border border-danger-subtle">
+                            <div class="p-2 rounded-3 bg-danger-subtle border border-danger-subtle gg-cat-drill-card" data-cat-key="PERMANENT" title="Klik untuk melihat rincian kejadian Permanen">
                                 <span class="text-danger d-block" style="font-size: 10.5px;">Permanen</span>
-                                <strong class="fs-6 text-danger font-monospace"><?= number_format($focusCat['PERMANENT']) ?></strong>
-                                <span class="text-danger small">(<?= number_format($focusCat['perm_pct'], 1) ?>%)</span>
+                                <strong class="fs-6 text-danger font-monospace"><?= number_format((int)$focusCat['PERMANENT'], 0, ',', '.') ?></strong>
+                                <span class="text-danger small font-monospace">(<?= number_format((float)$focusCat['perm_pct'], 1, ',', '.') ?>%)</span>
                             </div>
                         </div>
+                        <?php if (!empty($focusCat['UNKNOWN'])): ?>
+                        <div class="col-12">
+                            <div class="p-1.5 rounded-3 bg-secondary-subtle border gg-cat-drill-card" data-cat-key="UNKNOWN" title="Klik untuk melihat rincian kejadian Tidak Tercatat">
+                                <span class="text-muted small">Tidak Tercatat: </span>
+                                <strong class="text-dark font-monospace"><?= number_format((int)$focusCat['UNKNOWN'], 0, ',', '.') ?></strong>
+                                <span class="text-muted small font-monospace">(<?= number_format((float)($focusCat['unk_pct'] ?? 0), 1, ',', '.') ?>%)</span>
+                            </div>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 <?php else: ?>
                     <div class="text-center text-muted py-5 small"><i class="fas fa-circle-info me-1"></i>Belum ada data kategori pada filter ini.</div>
@@ -539,16 +548,16 @@ $fullYearBTot = (int)($item3['year_b_total'] ?? 0);
             </div>
             <div class="card-body d-flex flex-column justify-content-between">
                 <?php if (($item6['focus_total'] ?? 0) > 0): ?>
-                    <div style="height: 175px; position: relative;">
-                        <canvas id="chartPmtRecl"></canvas>
+                    <div style="height: 210px; position: relative;">
+                        <canvas id="chartPmtRecl" role="img" aria-label="Grafik donat rasio gangguan PMT vs REC/PMCB"></canvas>
                     </div>
                     <div class="d-flex flex-column gap-1.5 mt-2" style="font-size: 12px;">
                         <?php foreach ($item6['rows'] as $dr): ?>
-                        <div class="d-flex justify-content-between align-items-center px-2 py-1 rounded-2 bg-light border">
+                        <div class="d-flex justify-content-between align-items-center px-2.5 py-1.5 rounded-2 bg-light border gg-sw-drill-row" data-sw-key="<?= esc($dr['type']) ?>" title="Klik untuk melihat rincian peralatan <?= esc($dr['label']) ?>">
                             <span class="fw-semibold text-dark"><?= esc($dr['label']) ?></span>
                             <span class="font-monospace">
-                                <strong><?= number_format($dr['focus']) ?></strong>
-                                <span class="text-muted">(<?= number_format($dr['focus_pct'], 1) ?>%)</span>
+                                <strong><?= number_format((int)$dr['focus'], 0, ',', '.') ?></strong>
+                                <span class="text-muted">(<?= number_format((float)$dr['focus_pct'], 1, ',', '.') ?>%)</span>
                             </span>
                         </div>
                         <?php endforeach; ?>
@@ -1712,48 +1721,72 @@ $p12Rows     = $item12['rows'] ?? [];
 
     document.addEventListener('DOMContentLoaded', function() {
         ensureChartLoaded(function() {
-            // Item 1: Permanen vs Temporer Donut
-            var ctx1 = document.getElementById('chartPermTemp');
-            if (ctx1) {
-                var catKeys1 = ['TEMPORARY', 'PERMANENT'];
-                var catTotal1 = <?= (int)$focusCat['TEMPORARY'] ?> + <?= (int)$focusCat['PERMANENT'] ?>;
-                new Chart(ctx1, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Temporer', 'Permanen'],
-                        datasets: [{
-                            data: [<?= (int)$focusCat['TEMPORARY'] ?>, <?= (int)$focusCat['PERMANENT'] ?>],
-                            backgroundColor: ['#64748b', '#ef4444'],
-                            borderWidth: 2,
-                            borderColor: '#ffffff'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: '58%',
-                        onHover: setPointerOnHover,
-                        onClick: function(evt, elements) {
-                            if (!elements || !elements.length) return;
-                            var k = catKeys1[elements[0].index];
-                            if (k) openGgDetail('category', k, {}, ctx1);
-                        },
-                        plugins: {
-                            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(tc) {
-                                        var v = Number(tc.raw || 0);
-                                        var pct = catTotal1 > 0 ? ((v / catTotal1) * 100).toFixed(1) : '0.0';
-                                        return tc.label + ': ' + v.toLocaleString('id-ID') + ' kejadian (' + pct + '%)';
-                                    },
-                                    afterLabel: function() { return 'Klik segmen untuk lihat daftar kejadian'; }
-                                }
-                            }
+            <?php
+                $activeUlpText = 'Semua ULP';
+                if ($ulpIdFilter && !empty($ulps)) {
+                    foreach ($ulps as $uRow) {
+                        if ((int)$uRow['id'] === (int)$ulpIdFilter) {
+                            $activeUlpText = $uRow['nama_ulp'];
+                            break;
                         }
+                    }
+                }
+                $activePenyulangText = !empty($activePenyulangName) ? $activePenyulangName : 'Semua Penyulang';
+                $ggFilterDesc = $activeUlpText . ' • ' . $activePenyulangText;
+                $catA = $item1['year_a'] ?? ['TEMPORARY' => 0, 'PERMANENT' => 0, 'UNKNOWN' => 0];
+                $catB = $item1['year_b'] ?? ['TEMPORARY' => 0, 'PERMANENT' => 0, 'UNKNOWN' => 0];
+            ?>
+            var ggFilterSummary = <?= json_encode($ggFilterDesc) ?>;
+
+            // Item 1: Permanen vs Temporer Donut (direct count + % labels & full tooltip context)
+            var ctx1 = document.getElementById('chartPermTemp');
+            if (ctx1 && window.renderSidaktejoDoughnutChart) {
+                var catLabels1 = ['Temporer', 'Permanen'];
+                var catKeys1   = ['TEMPORARY', 'PERMANENT'];
+                var catCounts1 = [<?= (int)$focusCat['TEMPORARY'] ?>, <?= (int)$focusCat['PERMANENT'] ?>];
+                var catPcts1   = [<?= json_encode((float)$focusCat['temp_pct']) ?>, <?= json_encode((float)$focusCat['perm_pct']) ?>];
+                var catYrA1    = [<?= (int)($catA['TEMPORARY'] ?? 0) ?>, <?= (int)($catA['PERMANENT'] ?? 0) ?>];
+                var catYrB1    = [<?= (int)($catB['TEMPORARY'] ?? 0) ?>, <?= (int)($catB['PERMANENT'] ?? 0) ?>];
+                var catColors1 = ['#64748b', '#ef4444'];
+                var catInks1   = ['#334155', '#b91c1c'];
+                <?php if (!empty($focusCat['UNKNOWN'])): ?>
+                catLabels1.push('Tidak Tercatat');
+                catKeys1.push('UNKNOWN');
+                catCounts1.push(<?= (int)$focusCat['UNKNOWN'] ?>);
+                catPcts1.push(<?= json_encode((float)($focusCat['unk_pct'] ?? 0)) ?>);
+                catYrA1.push(<?= (int)($catA['UNKNOWN'] ?? 0) ?>);
+                catYrB1.push(<?= (int)($catB['UNKNOWN'] ?? 0) ?>);
+                catColors1.push('#94a3b8');
+                catInks1.push('#475569');
+                <?php endif; ?>
+
+                window.renderSidaktejoDoughnutChart({
+                    canvas: ctx1,
+                    labels: catLabels1,
+                    keys: catKeys1,
+                    counts: catCounts1,
+                    pcts: catPcts1,
+                    total: <?= (int)$focusCat['total'] ?>,
+                    colors: catColors1,
+                    labelInks: catInks1,
+                    yearA: <?= (int)$yearA ?>,
+                    yearB: <?= (int)$yearB ?>,
+                    yearACounts: catYrA1,
+                    yearBCounts: catYrB1,
+                    focusLabel: <?= json_encode($focusLabel) ?>,
+                    filterSummary: ggFilterSummary,
+                    cutout: '56%',
+                    onSliceClick: function(k, idx, triggerEl) {
+                        if (k) openGgDetail('category', k, {}, triggerEl || ctx1);
                     }
                 });
             }
+            document.querySelectorAll('.gg-cat-drill-card').forEach(function(card) {
+                var k = card.getAttribute('data-cat-key');
+                if (k && window.bindAccessibleAction) {
+                    window.bindAccessibleAction(card, function() { openGgDetail('category', k, {}, card); });
+                }
+            });
 
             // Item 2: Gangguan per ULP
             var ctx2 = document.getElementById('chartUlp');
@@ -1890,49 +1923,41 @@ $p12Rows     = $item12['rows'] ?? [];
                 });
             }
 
-            // Item 6: Rasio PMT vs REC/PMCB
+            // Item 6: Rasio PMT vs REC/PMCB (direct count + % labels & full tooltip context)
             var ctx6 = document.getElementById('chartPmtRecl');
-            if (ctx6) {
+            if (ctx6 && window.renderSidaktejoDoughnutChart) {
                 var swKeys6   = <?= json_encode($item6['keys'] ?? []) ?>;
                 var swCounts6 = <?= json_encode($item6['focus_counts'] ?? []) ?>;
-                var swTotal6  = swCounts6.reduce(function(a, b) { return a + Number(b || 0); }, 0);
-                new Chart(ctx6, {
-                    type: 'doughnut',
-                    data: {
-                        labels: <?= json_encode($item6['labels'] ?? []) ?>,
-                        datasets: [{
-                            data: swCounts6,
-                            backgroundColor: ['#0284c7', '#f59e0b', '#64748b'],
-                            borderWidth: 2,
-                            borderColor: '#ffffff'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: '55%',
-                        onHover: setPointerOnHover,
-                        onClick: function(evt, elements) {
-                            if (!elements || !elements.length) return;
-                            var k = swKeys6[elements[0].index];
-                            if (k) openGgDetail('switching_type', k, {}, ctx6);
-                        },
-                        plugins: {
-                            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10.5 } } },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(tc) {
-                                        var v = Number(tc.raw || 0);
-                                        var pct = swTotal6 > 0 ? ((v / swTotal6) * 100).toFixed(1) : '0.0';
-                                        return tc.label + ': ' + v.toLocaleString('id-ID') + ' kejadian (' + pct + '%)';
-                                    },
-                                    afterLabel: function() { return 'Klik segmen untuk lihat detail peralatan'; }
-                                }
-                            }
-                        }
+                var swPcts6   = <?= json_encode($item6['focus_pcts'] ?? []) ?>;
+                var swYrA6    = <?= json_encode($item6['year_a_counts'] ?? []) ?>;
+                var swYrB6    = <?= json_encode($item6['year_b_counts'] ?? []) ?>;
+                window.renderSidaktejoDoughnutChart({
+                    canvas: ctx6,
+                    labels: <?= json_encode($item6['labels'] ?? []) ?>,
+                    keys: swKeys6,
+                    counts: swCounts6,
+                    pcts: swPcts6,
+                    total: <?= (int)($item6['focus_total'] ?? 0) ?>,
+                    colors: ['#0284c7', '#f59e0b', '#64748b'],
+                    labelInks: ['#0369a1', '#b45309', '#334155'],
+                    yearA: <?= (int)$yearA ?>,
+                    yearB: <?= (int)$yearB ?>,
+                    yearACounts: swYrA6,
+                    yearBCounts: swYrB6,
+                    focusLabel: <?= json_encode($focusLabel) ?>,
+                    filterSummary: ggFilterSummary,
+                    cutout: '55%',
+                    onSliceClick: function(k, idx, triggerEl) {
+                        if (k) openGgDetail('switching_type', k, {}, triggerEl || ctx6);
                     }
                 });
             }
+            document.querySelectorAll('.gg-sw-drill-row').forEach(function(rowEl) {
+                var k = rowEl.getAttribute('data-sw-key');
+                if (k && window.bindAccessibleAction) {
+                    window.bindAccessibleAction(rowEl, function() { openGgDetail('switching_type', k, {}, rowEl); });
+                }
+            });
 
             // Monthly Bar Chart (Year A vs Year B)
             var ctxMonthly = document.getElementById('chartGangguan');

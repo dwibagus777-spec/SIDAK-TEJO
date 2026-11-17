@@ -871,5 +871,29 @@ class GoogleSheetsGangguanSyncAndAnalyticsTest extends CIUnitTestCase
         $dUlp2Ens = $analytics->getDrilldownDetails($ctxUlp2, 'ens_year', '2026', ['target_year' => 2026]);
         $this->assertSame(1, $dUlp2Ens['total_matching']);
         $this->assertEqualsWithDelta(304.26, (float)$dUlp2Ens['breakdowns']['energy_kwh_total'], 0.02);
+
+        // Permanen vs Temporer & Rasio PMT vs REC/PMCB parity between /gangguan and /dashboard
+        $this->assertSame($g12['permanen_vs_temporer']['year_a'], $dashImp['category_summary'][2026]);
+        $this->assertSame($g12['permanen_vs_temporer']['year_b'], $dashImp['category_summary'][2025]);
+        $this->assertSame([50.0, 50.0], $g12['rasio_pmt_vs_recl_pmcb']['focus_pcts']);
+        $this->assertSame($g12['rasio_pmt_vs_recl_pmcb']['focus_pcts'], $dashImp['switching_summary'][2026]['focus_pcts']);
+
+        // Drill-down pagination & sub-filtering (offset, limit, search, event_category)
+        $dPage1 = $analytics->getDrilldownDetails($ctx, 'ens_year', '2026', ['target_year' => 2026, 'offset' => 0, 'limit' => 10]);
+        $this->assertSame(2, $dPage1['total_matching']);
+        $this->assertSame(2, $dPage1['filtered_matching']);
+        $this->assertFalse($dPage1['has_more']);
+        $this->assertSame(1, $dPage1['events'][0]['row_num']);
+        $this->assertSame(2, $dPage1['events'][1]['row_num']);
+
+        $dFiltered = $analytics->getDrilldownDetails($ctx, 'ens_year', '2026', [
+            'target_year'    => 2026,
+            'search'         => 'HEAVEN',
+            'event_category' => 'TEMPORARY',
+        ]);
+        $this->assertSame(2, $dFiltered['total_matching']);
+        $this->assertSame(1, $dFiltered['filtered_matching']);
+        $this->assertCount(1, $dFiltered['events']);
+        $this->assertSame('HEAVEN LAND', $dFiltered['events'][0]['feeder_name']);
     }
 }

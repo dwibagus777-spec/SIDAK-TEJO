@@ -359,6 +359,9 @@ class GangguanAnalyticsService
         $monthlyEnsByYear          = [];
         $monthlyEnsCntByYear       = [];
         $annualEnsByYear           = [];
+        $categoryByYear            = [];
+        $switchingByYear           = [];
+        $monthlyCategoryByYear     = [];
         $topFeedersByYear          = [];
 
         foreach ($availableYears as $yr) {
@@ -379,6 +382,8 @@ class GangguanAnalyticsService
                 'max_month'    => $ensSumYr['max_month'],
                 'avg_per_trip' => $ensSumYr['avg_per_trip'],
             ];
+            $categoryByYear[$yr]  = $this->countByCategory($yrRows);
+            $switchingByYear[$yr] = $this->buildSwitchingTypeComparison($yrRows, $yrRows, []);
 
             $moCounts = $this->countMonthly($yrRows);
             $maxMo = 0;
@@ -446,6 +451,12 @@ class GangguanAnalyticsService
                     $monthlyDeviceByYear[$yr][$dtype] = array_fill(0, 12, null);
                 }
                 $monthlyDeviceByYear[$yr][$dtype][$moIdx] = ($monthlyDeviceByYear[$yr][$dtype][$moIdx] ?? 0) + 1;
+
+                $icat = $r['interruption_category'] ?: 'TEMPORARY';
+                if (!isset($monthlyCategoryByYear[$yr][$icat])) {
+                    $monthlyCategoryByYear[$yr][$icat] = array_fill(0, 12, null);
+                }
+                $monthlyCategoryByYear[$yr][$icat][$moIdx] = ($monthlyCategoryByYear[$yr][$icat][$moIdx] ?? 0) + 1;
             }
 
             // Top 10 Feeders for this year
@@ -453,6 +464,17 @@ class GangguanAnalyticsService
         }
 
         krsort($cumulativeGangguanYoY);
+
+        $activeUlpName = 'Semua ULP';
+        if ($ulpId !== null) {
+            $ulps = $this->getUlpCatalog();
+            $activeUlpName = $ulps['by_id'][$ulpId]['nama_ulp'] ?? ('ULP #' . $ulpId);
+        }
+        $activeFeederName = 'Semua Penyulang';
+        if ($penyulangId !== null) {
+            $feeders = $this->getFeederCatalog();
+            $activeFeederName = $feeders['by_id'][$penyulangId]['nama_penyulang'] ?? ('Penyulang #' . $penyulangId);
+        }
 
         $interruptionMetricsPayload = [
             'yoy'               => $cumulativeGangguanYoY,
@@ -464,6 +486,14 @@ class GangguanAnalyticsService
             'ens_meta'          => $this->getEnsFormulaMeta(),
             'ens_scope'         => $ctx['scope'] ?? 'year_a',
             'ens_penyulang_id'  => $penyulangId,
+            'category_summary'  => $categoryByYear,
+            'switching_summary' => $switchingByYear,
+            'category_monthly'  => $monthlyCategoryByYear,
+            'filter_context'    => [
+                'ulp_label'       => $activeUlpName,
+                'penyulang_label' => $activeFeederName,
+                'scope'           => $ctx['scope'] ?? 'year_a',
+            ],
             'relay'             => $monthlyRelayByYear,
             'cause'             => $monthlyCauseByYear,
             'device'            => $monthlyDeviceByYear,
@@ -970,6 +1000,7 @@ class GangguanAnalyticsService
             'total'     => $tot,
             'temp_pct'  => $tot > 0 ? round(($temp / $tot) * 100, 1) : 0.0,
             'perm_pct'  => $tot > 0 ? round(($perm / $tot) * 100, 1) : 0.0,
+            'unk_pct'   => $tot > 0 ? round(($unk / $tot) * 100, 1) : 0.0,
         ];
     }
 
@@ -1107,6 +1138,7 @@ class GangguanAnalyticsService
             'labels'        => array_column($rows, 'label'),
             'keys'          => $keys,
             'focus_counts'  => array_column($rows, 'focus'),
+            'focus_pcts'    => array_column($rows, 'focus_pct'),
             'year_a_counts' => array_column($rows, 'year_a'),
             'year_b_counts' => array_column($rows, 'year_b'),
             'focus_total'   => $totalF,
@@ -1574,7 +1606,11 @@ class GangguanAnalyticsService
         $dimUpper       = strtolower(trim($dimension));
         $keyUpper       = strtoupper(preg_replace('/\s+/', ' ', trim($key)) ?? '');
         $subKey         = trim((string)($extra['sub_key'] ?? ''));
-        $limit          = max(10, min(200, (int)($extra['limit'] ?? 100)));
+        $offset         = max(0, (int)($extra['offset'] ?? 0));
+        $limit          = max(10, min(1000, (int)($extra['limit'] ?? 100)));
+        $search         = trim((string)($extra['search'] ?? ''));
+        $eventCategory  = strtoupper(trim((string)($extra['event_category'] ?? '')));
+        $eventUlp       = strtoupper(preg_replace('/\s+/', ' ', trim(str_ireplace('ULP', '', (string)($extra['event_ulp'] ?? '')))) ?? '');
         $paretoSequence = [];
         $paretoPoint    = null;
         $title          = 'Detail Gangguan';
@@ -1787,8 +1823,46 @@ class GangguanAnalyticsService
             }
         }
 
-        $events = array_map(static function (array $r): array {
-            return [
+        $filteredRows = $matchingRows;
+        if ($eventCategory !== '' && in_array($eventCategory, ['TEMPORARY', 'PERMANENT', 'UNKNOWN'], true)) {
+            $filteredRows = array_values(array_filter(
+                $filteredRows,
+                static fn(array $r): bool => strtoupper((string)$r['interruption_category']) === $eventCategory
+            ));
+        }
+        if ($eventUlp !== '') {
+            $filteredRows = array_values(array_filter(
+                $filteredRows,
+                static fn(array $r): bool => strtoupper((string)$r['ulp_name']) === $eventUlp || str_contains(strtoupper((string)$r['ulp_name']), $eventUlp)
+            ));
+        }
+        if ($search !== '') {
+            $needle = strtolower($search);
+            $filteredRows = array_values(array_filter($filteredRows, static function (array $r) use ($needle): bool {
+                $hay = strtolower(
+                    ($r['event_date'] ?? '') . ' ' .
+                    ($r['interruption_started_at'] ?? '') . ' ' .
+                    ($r['ulp_name'] ?? '') . ' ' .
+                    ($r['feeder_name'] ?? '') . ' ' .
+                    ($r['device_label'] ?? '') . ' ' .
+                    ($r['equipment_family'] ?? '') . ' ' .
+                    ($r['switching_device_type'] ?? '') . ' ' .
+                    ($r['relay_label'] ?? '') . ' ' .
+                    ($r['interruption_category'] ?? '') . ' ' .
+                    ($r['cause_raw'] ?? '') . ' ' .
+                    ($r['field_narrative_raw'] ?? '') . ' ' .
+                    ($r['restoration_action_raw'] ?? '')
+                );
+                return str_contains($hay, $needle);
+            }));
+        }
+
+        $filteredMatching = count($filteredRows);
+        $slicedRows       = array_slice($filteredRows, $offset, $limit);
+        $events           = [];
+        foreach ($slicedRows as $idx => $r) {
+            $events[] = [
+                'row_num'                 => $offset + $idx + 1,
                 'event_date'              => $r['event_date'],
                 'interruption_started_at' => $r['interruption_started_at'],
                 'outage_duration_minutes' => $r['outage_duration_minutes'],
@@ -1804,9 +1878,10 @@ class GangguanAnalyticsService
                 'cause_raw'               => $r['cause_raw'],
                 'cause_canonical_code'    => $r['cause_canonical_code'],
                 'field_narrative_raw'     => $r['field_narrative_raw'],
+                'restoration_action_raw'  => $r['restoration_action_raw'] ?? '',
                 'source_system'           => $r['source_system'],
             ];
-        }, array_slice($matchingRows, 0, $limit));
+        }
 
         $activeUlpName = 'Semua ULP';
         if ($ulpId !== null) {
@@ -1820,16 +1895,24 @@ class GangguanAnalyticsService
             $activeFeederName = $feeders['by_id'][$pid]['nama_penyulang'] ?? ('Penyulang #' . $pid);
         }
 
+        $returnedCount = count($events);
+        $hasMore       = ($offset + $returnedCount) < $filteredMatching;
+
         return [
-            'dimension'       => $dimUpper,
-            'key'             => $key,
-            'title'           => $title,
-            'subtitle'        => $subtitle,
-            'total_matching'  => $totalMatching,
-            'total_scope'     => $totalScope,
-            'share_pct'       => $sharePct,
-            'events_returned' => count($events),
-            'events_capped'   => $totalMatching > $limit,
+            'dimension'         => $dimUpper,
+            'key'               => $key,
+            'title'             => $title,
+            'subtitle'          => $subtitle,
+            'total_matching'    => $totalMatching,
+            'filtered_matching' => $filteredMatching,
+            'total_scope'       => $totalScope,
+            'share_pct'         => $sharePct,
+            'offset'            => $offset,
+            'limit'             => $limit,
+            'events_returned'   => $returnedCount,
+            'has_more'          => $hasMore,
+            'remaining_count'   => max(0, $filteredMatching - ($offset + $returnedCount)),
+            'events_capped'     => $hasMore,
             'filter_context'  => [
                 'year_label'      => $yearLabel,
                 'ulp_label'       => $activeUlpName,

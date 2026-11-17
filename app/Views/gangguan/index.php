@@ -641,12 +641,17 @@ $ensPctStr   = $ensPct !== null ? ($ensPct > 0 ? '+' . $ensPct . '%' : $ensPct .
         <div class="row g-3 align-items-stretch">
             <div class="col-lg-8 col-12">
                 <div class="border rounded-3 p-2.5 bg-light bg-opacity-50 h-100 d-flex flex-column">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-1 mb-2">
                         <span class="fw-bold text-dark small"><i class="fas fa-chart-bar text-primary me-1"></i>ENS (kWh) per Bulan (<?= (int)$yearA ?> vs <?= (int)$yearB ?>)</span>
-                        <span class="text-muted font-monospace" style="font-size: 10.5px;">Total bulanan = total tahunan (<?= esc($ensMeta['unit'] ?? 'kWh') ?>)</span>
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <span class="d-lg-none badge bg-white text-secondary border rounded-pill px-2 py-0.5 text-nowrap" style="font-size: 10px;"><i class="fas fa-arrows-left-right me-1" aria-hidden="true"></i>Geser grafik</span>
+                            <span class="text-muted font-monospace" style="font-size: 10.5px;">Total bulanan = total tahunan (<?= esc($ensMeta['unit'] ?? 'kWh') ?>)</span>
+                        </div>
                     </div>
-                    <div style="height: 235px; position: relative;">
-                        <canvas id="chartEnsBulanan" role="img" aria-label="Grafik ENS (kWh) per bulan membandingkan tahun A dan tahun B"></canvas>
+                    <div class="ens-chart-scroll-wrap">
+                        <div class="ens-monthly-canvas-box">
+                            <canvas id="chartEnsBulanan" role="img" aria-label="Grafik ENS (kWh) per bulan membandingkan tahun A dan tahun B"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -656,7 +661,7 @@ $ensPctStr   = $ensPct !== null ? ($ensPct > 0 ? '+' . $ensPct . '%' : $ensPct .
                         <span class="fw-bold text-dark small"><i class="fas fa-scale-balanced text-warning-emphasis me-1"></i>Total ENS per Tahun</span>
                         <span class="badge bg-light text-secondary border rounded-pill" style="font-size: 10px;"><?= esc($focusLabel) ?></span>
                     </div>
-                    <div style="height: 175px; position: relative;">
+                    <div class="ens-annual-canvas-box">
                         <canvas id="chartEnsTahunan" role="img" aria-label="Grafik perbandingan total ENS per tahun"></canvas>
                     </div>
                     <div class="d-flex justify-content-between align-items-center px-2 py-1.5 rounded-2 bg-white border small font-monospace" style="font-size: 10.5px;">
@@ -671,8 +676,13 @@ $ensPctStr   = $ensPct !== null ? ($ensPct > 0 ? '+' . $ensPct . '%' : $ensPct .
                 </div>
             </div>
         </div>
+        <?php elseif ($syncState === 'ERROR' && !empty($syncError)): ?>
+            <div class="alert alert-warning mb-0 py-3 px-3 rounded-3 small d-flex align-items-center justify-content-center gap-2 text-center">
+                <i class="fas fa-triangle-exclamation flex-shrink-0"></i>
+                <div>Sinkronisasi Google Sheets gagal (<?= esc($syncError) ?>) dan belum ada data ENS (kWh) tersimpan pada tahun <?= (int)$yearA ?> maupun <?= (int)$yearB ?> sesuai filter ini.</div>
+            </div>
         <?php else: ?>
-            <div class="text-center py-4 text-muted small">Belum ada data ENS (kWh) pada tahun <?= (int)$yearA ?> maupun <?= (int)$yearB ?> sesuai filter ini.</div>
+            <div class="text-center py-4 text-muted small"><i class="fas fa-circle-info me-1" aria-hidden="true"></i>Belum ada data ENS (kWh) pada tahun <?= (int)$yearA ?> maupun <?= (int)$yearB ?> sesuai filter ini.</div>
         <?php endif; ?>
     </div>
 </div>
@@ -1511,6 +1521,7 @@ $p12Rows     = $item12['rows'] ?? [];
 </div>
 <?php endif; ?>
 <?= $this->include('partials/_gangguan_drilldown_modal') ?>
+<?= $this->include('partials/_ens_chart_helper') ?>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
@@ -1963,149 +1974,39 @@ $p12Rows     = $item12['rows'] ?? [];
                 });
             }
 
-            // ENS (kWh) Monthly Comparison & Annual Total Comparison
+            // ENS (kWh) Monthly Comparison & Annual Total Comparison (shared non-overlapping renderer)
             var ctxEnsMo = document.getElementById('chartEnsBulanan');
+            var ctxEnsYr = document.getElementById('chartEnsTahunan');
             var ensMoA   = <?= json_encode($ensMoA ?? []) ?>;
             var ensMoB   = <?= json_encode($ensMoB ?? []) ?>;
             var ggScope  = <?= json_encode($scope ?? 'year_a') ?>;
-            if (ctxEnsMo) {
-                var maxEnsMo = Math.max.apply(null, [0].concat(
-                    ensMoA.filter(function(v) { return v !== null; }),
-                    ensMoB.filter(function(v) { return v !== null; })
-                ));
-                new Chart(ctxEnsMo, {
-                    type: 'bar',
-                    data: {
-                        labels: <?= json_encode($monthLabels) ?>,
-                        datasets: [
-                            {
-                                label: 'Tahun <?= (int)$yearA ?> (<?= number_format($ensTotA, 2, ',', '.') ?> kWh)',
-                                data: ensMoA,
-                                backgroundColor: ggScope === 'year_b' ? 'rgba(13,110,253,0.42)' : 'rgba(13,110,253,0.86)',
-                                borderRadius: 4
-                            },
-                            {
-                                label: 'Tahun <?= (int)$yearB ?> (<?= number_format($ensTotB, 2, ',', '.') ?> kWh)',
-                                data: ensMoB,
-                                backgroundColor: ggScope === 'year_b' ? 'rgba(217,119,6,0.86)' : 'rgba(148,163,184,0.68)',
-                                borderRadius: 4
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        onHover: setPointerOnHover,
-                        onClick: function(evt, elements, chart) {
-                            var hits = (elements && elements.length) ? elements : chart.getElementsAtEventForMode(evt, 'index', { intersect: false }, true);
-                            if (!hits || !hits.length) return;
-                            var hit = hits[0];
-                            var yr  = hit.datasetIndex === 0 ? <?= (int)$yearA ?> : <?= (int)$yearB ?>;
-                            openGgDetail('ens_month', String(hit.index + 1), { target_year: yr }, ctxEnsMo);
-                        },
-                        interaction: { mode: 'index', intersect: false },
-                        layout: { padding: { top: 10 } },
-                        plugins: {
-                            legend: { position: 'top', align: 'end', labels: { boxWidth: 10, font: { size: 10.5 } } },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(tc) {
-                                        if (tc.raw === null || typeof tc.raw === 'undefined') {
-                                            return tc.dataset.label.split(' (')[0] + ': Belum ada data';
-                                        }
-                                        return tc.dataset.label.split(' (')[0] + ': ' + Number(tc.raw).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' kWh';
-                                    },
-                                    afterBody: function() { return ['Klik batang untuk rincian gangguan pembentuk ENS']; }
-                                }
-                            }
-                        },
-                        scales: {
-                            x: { grid: { display: false }, ticks: { font: { size: 10.5 } } },
-                            y: {
-                                beginAtZero: true,
-                                suggestedMax: maxEnsMo > 0 ? Math.ceil(maxEnsMo * 1.15) : 10,
-                                ticks: {
-                                    font: { size: 10 },
-                                    callback: function(v) {
-                                        if (v >= 1000) return (v / 1000).toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' rb';
-                                        return Number(v).toLocaleString('id-ID');
-                                    }
-                                },
-                                title: { display: true, text: 'ENS (kWh)', font: { size: 10, weight: 'bold' } }
-                            }
-                        }
-                    }
-                });
-            }
-
-            var ctxEnsYr = document.getElementById('chartEnsTahunan');
-            if (ctxEnsYr) {
-                var yrKeysEns = [<?= (int)$yearA ?>, <?= (int)$yearB ?>];
-                var yrLabelsEns = ['Tahun <?= (int)$yearA ?>', 'Tahun <?= (int)$yearB ?>'];
-                var yrValsEns = [<?= json_encode(round($ensTotA, 2)) ?>, <?= json_encode(round($ensTotB, 2)) ?>];
-                var yrColorsEns = [
-                    ggScope === 'year_b' ? 'rgba(13,110,253,0.45)' : 'rgba(13,110,253,0.88)',
-                    ggScope === 'year_b' ? 'rgba(217,119,6,0.88)' : 'rgba(100,116,139,0.72)'
-                ];
-                if (ggScope === 'combined' && <?= (int)$yearA ?> !== <?= (int)$yearB ?>) {
-                    yrKeysEns.push('COMBINED');
-                    yrLabelsEns.push('Gabungan');
-                    yrValsEns.push(<?= json_encode(round((float)($ensData['combined_total'] ?? ($ensTotA + $ensTotB)), 2)) ?>);
-                    yrColorsEns.push('rgba(22,163,74,0.86)');
-                }
-                var maxEnsYr = Math.max.apply(null, [0].concat(yrValsEns));
-                new Chart(ctxEnsYr, {
-                    type: 'bar',
-                    data: {
-                        labels: yrLabelsEns,
-                        datasets: [{
-                            label: 'Total ENS (kWh)',
-                            data: yrValsEns,
-                            backgroundColor: yrColorsEns,
-                            borderRadius: 6,
-                            maxBarThickness: 58
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        onHover: setPointerOnHover,
-                        onClick: function(evt, elements, chart) {
-                            var hits = (elements && elements.length) ? elements : chart.getElementsAtEventForMode(evt, 'nearest', { intersect: false }, true);
-                            if (!hits || !hits.length) return;
-                            var k = yrKeysEns[hits[0].index];
-                            if (k === 'COMBINED') {
-                                openGgDetail('ens_year', 'COMBINED', {}, ctxEnsYr);
-                            } else if (k) {
-                                openGgDetail('ens_year', String(k), { target_year: k }, ctxEnsYr);
-                            }
-                        },
-                        layout: { padding: { top: 14 } },
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(tc) {
-                                        return Number(tc.raw || 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' kWh';
-                                    },
-                                    afterLabel: function() { return ['Klik batang untuk rincian ENS tahun ini']; }
-                                }
-                            }
-                        },
-                        scales: {
-                            x: { grid: { display: false }, ticks: { font: { size: 11, weight: '700' } } },
-                            y: {
-                                beginAtZero: true,
-                                suggestedMax: maxEnsYr > 0 ? Math.ceil(maxEnsYr * 1.18) : 10,
-                                ticks: {
-                                    font: { size: 10 },
-                                    callback: function(v) {
-                                        if (v >= 1000) return (v / 1000).toLocaleString('id-ID', { maximumFractionDigits: 0 }) + ' rb';
-                                        return Number(v).toLocaleString('id-ID');
-                                    }
-                                }
-                            }
-                        }
+            if ((ctxEnsMo || ctxEnsYr) && window.renderSidaktejoEnsCharts) {
+                window.renderSidaktejoEnsCharts({
+                    monthlyCanvas: ctxEnsMo,
+                    annualCanvas: ctxEnsYr,
+                    monthLabels: <?= json_encode($monthLabels) ?>,
+                    yearA: <?= (int)$yearA ?>,
+                    yearB: <?= (int)$yearB ?>,
+                    scope: ggScope,
+                    monthlyA: ensMoA,
+                    monthlyB: ensMoB,
+                    monthlyCntA: <?= json_encode($ensData['monthly_cnt_a'] ?? array_fill(0, 12, 0)) ?>,
+                    monthlyCntB: <?= json_encode($ensData['monthly_cnt_b'] ?? array_fill(0, 12, 0)) ?>,
+                    totalA: <?= json_encode(round($ensTotA, 2)) ?>,
+                    totalB: <?= json_encode(round($ensTotB, 2)) ?>,
+                    combinedTotal: <?= json_encode(round((float)($ensData['combined_total'] ?? ($ensTotA + $ensTotB)), 2)) ?>,
+                    countA: <?= (int)($ensData['count_a'] ?? 0) ?>,
+                    countB: <?= (int)($ensData['count_b'] ?? 0) ?>,
+                    avgA: <?= json_encode((float)($ensData['avg_a'] ?? 0)) ?>,
+                    avgB: <?= json_encode((float)($ensData['avg_b'] ?? 0)) ?>,
+                    colorA: ggScope === 'year_b' ? 'rgba(13,110,253,0.45)' : 'rgba(13,110,253,0.86)',
+                    colorB: ggScope === 'year_b' ? 'rgba(217,119,6,0.86)' : 'rgba(100,116,139,0.72)',
+                    colorCombined: 'rgba(22,163,74,0.86)',
+                    inkA: ggScope === 'year_b' ? '#1d4ed8' : '#1e3a8a',
+                    inkB: ggScope === 'year_b' ? '#b45309' : '#475569',
+                    inkCombined: '#15803d',
+                    onBarClick: function(dim, key, targetYear, triggerEl) {
+                        openGgDetail(dim, key, targetYear ? { target_year: targetYear } : {}, triggerEl);
                     }
                 });
             }

@@ -1865,11 +1865,18 @@
                         <div class="border rounded-3 p-2.5 bg-light bg-opacity-50 h-100 d-flex flex-column">
                             <div class="d-flex flex-wrap justify-content-between align-items-center gap-1 mb-1.5">
                                 <span class="fw-bold text-dark" style="font-size: 12px;"><i class="fas fa-chart-column text-danger me-1" aria-hidden="true"></i>ENS (kWh) per Bulan (Tahun A vs Tahun B)</span>
-                                <span class="text-muted" style="font-size: 10px;">Satuan: kWh &bull; Klik batang untuk rincian bulan</span>
+                                <div class="d-flex flex-wrap align-items-center gap-2">
+                                    <span class="d-lg-none badge bg-white text-secondary border rounded-pill px-2 py-0.5 text-nowrap" style="font-size: 10px;"><i class="fas fa-arrows-left-right me-1" aria-hidden="true"></i>Geser grafik</span>
+                                    <span class="text-muted" style="font-size: 10px;">Satuan: kWh &bull; Total bulanan = total tahunan</span>
+                                </div>
                             </div>
-                            <div class="position-relative w-100" style="height: 220px;">
-                                <canvas id="ensMonthlyComparisonChart" role="img" aria-label="Grafik ENS (kWh) per bulan membandingkan tahun A dan tahun B"></canvas>
-                                <div id="ensMonthlyEmptyOverlay" class="d-none position-absolute top-50 start-50 translate-middle text-center p-2.5 bg-white bg-opacity-90 rounded border shadow-sm small text-muted">
+                            <div class="position-relative w-100">
+                                <div class="ens-chart-scroll-wrap">
+                                    <div class="ens-monthly-canvas-box">
+                                        <canvas id="ensMonthlyComparisonChart" role="img" aria-label="Grafik ENS (kWh) per bulan membandingkan tahun A dan tahun B"></canvas>
+                                    </div>
+                                </div>
+                                <div id="ensMonthlyEmptyOverlay" class="d-none position-absolute top-50 start-50 translate-middle text-center p-2.5 bg-white bg-opacity-90 rounded border shadow-sm small text-muted" style="max-width: 90%; z-index: 5;">
                                     Data ENS bulanan belum tersedia pada periode ini.
                                 </div>
                             </div>
@@ -1881,9 +1888,9 @@
                                 <span class="fw-bold text-dark" style="font-size: 12px;"><i class="fas fa-scale-balanced text-warning-emphasis me-1" aria-hidden="true"></i>Perbandingan Total ENS per Tahun</span>
                                 <span class="text-muted" style="font-size: 10px;">Klik batang</span>
                             </div>
-                            <div class="position-relative w-100" style="height: 155px;">
+                            <div class="position-relative w-100 ens-annual-canvas-box">
                                 <canvas id="ensAnnualComparisonChart" role="img" aria-label="Grafik perbandingan total ENS per tahun"></canvas>
-                                <div id="ensAnnualEmptyOverlay" class="d-none position-absolute top-50 start-50 translate-middle text-center p-2 bg-white bg-opacity-90 rounded border shadow-sm small text-muted">
+                                <div id="ensAnnualEmptyOverlay" class="d-none position-absolute top-50 start-50 translate-middle text-center p-2 bg-white bg-opacity-90 rounded border shadow-sm small text-muted" style="max-width: 90%; z-index: 5;">
                                     Data total ENS belum tersedia.
                                 </div>
                             </div>
@@ -2736,6 +2743,7 @@
 </div>
 
 <?= $this->include('partials/_gangguan_drilldown_modal') ?>
+<?= $this->include('partials/_ens_chart_helper') ?>
 
 <!-- FOOTER RUNTIME SCRIPTS FOR CHARTS & GIS -->
 <script>
@@ -3255,14 +3263,16 @@ document.addEventListener('DOMContentLoaded', function() {
     window.updateEnsComparisonCharts = function(yrA, yrB) {
         try {
             if (typeof Chart === 'undefined') return;
-            var labels     = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-            var payload    = window.yoyPayload || {};
-            var ensMoMap   = payload.ens_monthly || {};
-            var ensAnnMap  = payload.ens_annual || {};
-            var arrA       = Array.isArray(ensMoMap[yrA]) ? ensMoMap[yrA] : array_fill_null(12);
-            var arrB       = Array.isArray(ensMoMap[yrB]) ? ensMoMap[yrB] : array_fill_null(12);
-            var annA       = ensAnnMap[yrA] || { total_kwh: 0, valid_events: 0, total_events: 0, avg_per_trip: 0 };
-            var annB       = ensAnnMap[yrB] || { total_kwh: 0, valid_events: 0, total_events: 0, avg_per_trip: 0 };
+            var payload      = window.yoyPayload || {};
+            var ensMoMap     = payload.ens_monthly || {};
+            var ensMoCntMap  = payload.ens_monthly_cnt || {};
+            var ensAnnMap    = payload.ens_annual || {};
+            var arrA         = Array.isArray(ensMoMap[yrA]) ? ensMoMap[yrA] : array_fill_null(12);
+            var arrB         = Array.isArray(ensMoMap[yrB]) ? ensMoMap[yrB] : array_fill_null(12);
+            var cntA         = Array.isArray(ensMoCntMap[yrA]) ? ensMoCntMap[yrA] : [];
+            var cntB         = Array.isArray(ensMoCntMap[yrB]) ? ensMoCntMap[yrB] : [];
+            var annA         = ensAnnMap[yrA] || { total_kwh: 0, valid_events: 0, total_events: 0, avg_per_trip: 0 };
+            var annB         = ensAnnMap[yrB] || { total_kwh: 0, valid_events: 0, total_events: 0, avg_per_trip: 0 };
 
             var sumMonths  = function(arr) {
                 return arr.reduce(function(acc, v) { return acc + (v !== null && !isNaN(v) ? Number(v) : 0); }, 0);
@@ -3301,7 +3311,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (cBV) cBV.textContent = fmtKwh(totB) + ' kWh';
             if (cBM) cBM.textContent = '(' + (annB.total_events || 0) + ' trip • rata ' + fmtKwh(annB.avg_per_trip || 0, 1) + ' kWh)';
 
-            var ulpFilterVal = <?= !empty($selectedUlpId) ? (int)$selectedUlpId : 'null' ?>;
+            var ulpFilterVal       = <?= !empty($selectedUlpId) ? (int)$selectedUlpId : 'null' ?>;
+            var penyulangFilterVal = <?= !empty($gangguanPenyulangId) ? (int)$gangguanPenyulangId : 'null' ?>;
+            var scopeFilterVal     = <?= json_encode($gangguanScope ?? 'year_a') ?>;
+            var syncErrStr         = <?= json_encode((($gangguanSyncStatus['status'] ?? '') === 'ERROR' && !empty($gangguanSyncStatus['last_error'])) ? (string)$gangguanSyncStatus['last_error'] : '') ?>;
+
             var triggerEnsDrilldown = function(dimension, key, targetYear, triggerEl) {
                 if (!window.openGangguanDrilldown) return;
                 window.openGangguanDrilldown({
@@ -3310,7 +3324,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     params: {
                         year_a: yrA,
                         year_b: yrB,
+                        scope: scopeFilterVal,
                         ulp_id: ulpFilterVal,
+                        penyulang_id: penyulangFilterVal,
                         target_year: targetYear,
                         dimension: dimension,
                         key: key
@@ -3322,151 +3338,39 @@ document.addEventListener('DOMContentLoaded', function() {
             if (cardBtnA) cardBtnA.onclick = function() { triggerEnsDrilldown('ens_year', String(yrA), yrA, cardBtnA); };
             if (cardBtnB) cardBtnB.onclick = function() { triggerEnsDrilldown('ens_year', String(yrB), yrB, cardBtnB); };
 
-            var ctxMo = document.getElementById('ensMonthlyComparisonChart');
-            var ovMo  = document.getElementById('ensMonthlyEmptyOverlay');
-            if (window.ensMonthlyChartInstance) {
-                window.ensMonthlyChartInstance.destroy();
-                window.ensMonthlyChartInstance = null;
-            }
-            var maxMo = Math.max(getArrayMax(arrA), getArrayMax(arrB));
-            var hasMo = (maxMo > 0 || totA > 0 || totB > 0);
-            if (ovMo) ovMo.classList.toggle('d-none', hasMo);
-            if (ctxMo) {
-                window.ensMonthlyChartInstance = new Chart(ctxMo, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [
-                            {
-                                label: 'ENS ' + yrA + ' (Total: ' + fmtKwh(totA) + ' kWh)',
-                                data: arrA,
-                                backgroundColor: 'rgba(220, 38, 38, 0.85)',
-                                borderRadius: 4,
-                                borderWidth: 0
-                            },
-                            {
-                                label: 'ENS ' + yrB + ' (Total: ' + fmtKwh(totB) + ' kWh)',
-                                data: arrB,
-                                backgroundColor: 'rgba(2, 132, 199, 0.78)',
-                                borderRadius: 4,
-                                borderWidth: 0
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        onHover: function(evt, elems) {
-                            if (evt && evt.native && evt.native.target) {
-                                evt.native.target.style.cursor = (elems && elems.length) ? 'pointer' : 'default';
-                            }
-                        },
-                        onClick: function(evt, elems, chart) {
-                            var hits = (elems && elems.length) ? elems : chart.getElementsAtEventForMode(evt, 'index', { intersect: false }, true);
-                            if (!hits || !hits.length) return;
-                            var h = hits[0];
-                            var yrTgt = (h.datasetIndex === 1) ? yrB : yrA;
-                            triggerEnsDrilldown('ens_month', String(h.index + 1), yrTgt, ctxMo);
-                        },
-                        interaction: { mode: 'index', intersect: false },
-                        layout: { padding: { top: 8, right: 8 } },
-                        plugins: {
-                            legend: { position: 'top', align: 'end', labels: { boxWidth: 10, font: { size: 10, weight: '600' } } },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(tc) {
-                                        if (tc.raw === null || typeof tc.raw === 'undefined') {
-                                            return tc.dataset.label.split(' (')[0] + ': Belum ada data';
-                                        }
-                                        return tc.dataset.label.split(' (')[0] + ': ' + fmtKwh(tc.raw) + ' kWh';
-                                    },
-                                    afterBody: function() { return ['Klik batang untuk melihat trip pembentuk ENS']; }
-                                }
-                            }
-                        },
-                        scales: {
-                            x: { grid: { display: false }, ticks: { font: { size: 10, weight: '600' } } },
-                            y: {
-                                beginAtZero: true,
-                                suggestedMax: maxMo > 0 ? Math.ceil(maxMo * 1.15) : 10,
-                                ticks: {
-                                    font: { size: 10 },
-                                    callback: function(v) {
-                                        if (v >= 1000) return (v / 1000).toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' rb';
-                                        return Number(v).toLocaleString('id-ID');
-                                    }
-                                },
-                                title: { display: true, text: 'ENS (kWh)', font: { size: 10, weight: 'bold' } },
-                                grid: { color: 'rgba(148, 163, 184, 0.16)' }
-                            }
-                        }
-                    }
+            if (window.renderSidaktejoEnsCharts) {
+                var rendered = window.renderSidaktejoEnsCharts({
+                    monthlyCanvas: document.getElementById('ensMonthlyComparisonChart'),
+                    annualCanvas: document.getElementById('ensAnnualComparisonChart'),
+                    monthlyOverlay: document.getElementById('ensMonthlyEmptyOverlay'),
+                    annualOverlay: document.getElementById('ensAnnualEmptyOverlay'),
+                    syncError: syncErrStr,
+                    yearA: yrA,
+                    yearB: yrB,
+                    scope: scopeFilterVal,
+                    monthlyA: arrA,
+                    monthlyB: arrB,
+                    monthlyCntA: cntA,
+                    monthlyCntB: cntB,
+                    totalA: totA,
+                    totalB: totB,
+                    combinedTotal: (yrA === yrB) ? totA : Number((totA + totB).toFixed(2)),
+                    countA: Number(annA.total_events || 0),
+                    countB: Number(annB.total_events || 0),
+                    avgA: Number(annA.avg_per_trip || 0),
+                    avgB: Number(annB.avg_per_trip || 0),
+                    colorA: 'rgba(220, 38, 38, 0.85)',
+                    colorB: 'rgba(2, 132, 199, 0.78)',
+                    colorCombined: 'rgba(22, 163, 74, 0.86)',
+                    inkA: '#b91c1c',
+                    inkB: '#0369a1',
+                    inkCombined: '#15803d',
+                    onBarClick: triggerEnsDrilldown
                 });
-            }
-
-            var ctxYr = document.getElementById('ensAnnualComparisonChart');
-            var ovYr  = document.getElementById('ensAnnualEmptyOverlay');
-            if (window.ensAnnualChartInstance) {
-                window.ensAnnualChartInstance.destroy();
-                window.ensAnnualChartInstance = null;
-            }
-            var hasYr = (totA > 0 || totB > 0);
-            if (ovYr) ovYr.classList.toggle('d-none', hasYr);
-            if (ctxYr) {
-                var maxAnn = Math.max(totA, totB);
-                window.ensAnnualChartInstance = new Chart(ctxYr, {
-                    type: 'bar',
-                    data: {
-                        labels: ['Tahun ' + yrA, 'Tahun ' + yrB],
-                        datasets: [{
-                            label: 'Total ENS Tahunan (kWh)',
-                            data: [totA, totB],
-                            backgroundColor: ['rgba(220, 38, 38, 0.88)', 'rgba(2, 132, 199, 0.84)'],
-                            borderRadius: 6,
-                            maxBarThickness: 54
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        onHover: function(evt, elems) {
-                            if (evt && evt.native && evt.native.target) {
-                                evt.native.target.style.cursor = (elems && elems.length) ? 'pointer' : 'default';
-                            }
-                        },
-                        onClick: function(evt, elems, chart) {
-                            var hits = (elems && elems.length) ? elems : chart.getElementsAtEventForMode(evt, 'nearest', { intersect: false }, true);
-                            if (!hits || !hits.length) return;
-                            var yrTgt = (hits[0].index === 1) ? yrB : yrA;
-                            triggerEnsDrilldown('ens_year', String(yrTgt), yrTgt, ctxYr);
-                        },
-                        layout: { padding: { top: 10 } },
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(tc) { return 'Total ENS: ' + fmtKwh(tc.raw) + ' kWh'; },
-                                    afterLabel: function() { return ['Klik batang untuk rincian trip tahun ini']; }
-                                }
-                            }
-                        },
-                        scales: {
-                            x: { grid: { display: false }, ticks: { font: { size: 10.5, weight: '700' } } },
-                            y: {
-                                beginAtZero: true,
-                                suggestedMax: maxAnn > 0 ? Math.ceil(maxAnn * 1.18) : 10,
-                                ticks: {
-                                    font: { size: 10 },
-                                    callback: function(v) {
-                                        if (v >= 1000) return (v / 1000).toLocaleString('id-ID', { maximumFractionDigits: 0 }) + ' rb';
-                                        return Number(v).toLocaleString('id-ID');
-                                    }
-                                },
-                                grid: { color: 'rgba(148, 163, 184, 0.16)' }
-                            }
-                        }
-                    }
-                });
+                if (rendered) {
+                    window.ensMonthlyChartInstance = rendered.monthlyChart;
+                    window.ensAnnualChartInstance  = rendered.annualChart;
+                }
             }
         } catch (eEns) {
             console.warn('[Dashboard] updateEnsComparisonCharts error:', eEns);
@@ -3542,7 +3446,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update detail link href to maintain seamless synchronization with /gangguan page
             var btnDetail = document.getElementById('btnDetailYoy');
             if (btnDetail) {
-                btnDetail.href = '<?= site_url("gangguan") ?>?year_a=' + yrA + '&year_b=' + yrB + '<?= !empty($selectedUlpId) ? "&ulp_id=" . (int)$selectedUlpId : "" ?>';
+                btnDetail.href = '<?= site_url("gangguan") ?>?year_a=' + yrA + '&year_b=' + yrB
+                    + '<?= !empty($selectedUlpId) ? "&ulp_id=" . (int)$selectedUlpId : "" ?>'
+                    + '<?= !empty($gangguanPenyulangId) ? "&penyulang_id=" . (int)$gangguanPenyulangId : "" ?>'
+                    + '<?= (!empty($gangguanScope) && $gangguanScope !== "year_a") ? "&scope=" . rawurlencode((string)$gangguanScope) : "" ?>';
             }
 
             var labels = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];

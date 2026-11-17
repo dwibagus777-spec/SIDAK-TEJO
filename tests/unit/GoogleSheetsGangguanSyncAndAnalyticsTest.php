@@ -838,11 +838,23 @@ class GoogleSheetsGangguanSyncAndAnalyticsTest extends CIUnitTestCase
         $this->assertEqualsWithDelta($ens['total_a'], $sumMoA, 0.01);
         $this->assertEqualsWithDelta($ens['total_b'], $sumMoB, 0.01);
 
-        // Dashboard payload strictly matches /gangguan analytics
+        // Dashboard payload strictly matches /gangguan analytics (including monthly counts)
         $this->assertSame($ens['monthly_a'], $dashImp['ens_monthly'][2026]);
         $this->assertSame($ens['monthly_b'], $dashImp['ens_monthly'][2025]);
+        $this->assertSame($ens['monthly_cnt_a'], $dashImp['ens_monthly_cnt'][2026]);
+        $this->assertSame($ens['monthly_cnt_b'], $dashImp['ens_monthly_cnt'][2025]);
+        $this->assertSame(2, (int)$ens['monthly_cnt_a'][0]);
         $this->assertEqualsWithDelta($ens['total_a'], $dashImp['ens_annual'][2026]['total_kwh'], 0.01);
         $this->assertEqualsWithDelta($ens['total_b'], $dashImp['ens_annual'][2025]['total_kwh'], 0.01);
+
+        // Penyulang filter parity between /gangguan and getDashboardSyncPayload
+        $ctxFeeder = $analytics->resolveContext(['year_a' => 2026, 'year_b' => 2025, 'penyulang_id' => 12, 'scope' => 'combined'], 'administrator', null);
+        $g12Feeder = $analytics->getGangguanAnalytics12Items($ctxFeeder);
+        $dashFeeder = $analytics->getDashboardSyncPayload($ctxFeeder, [2026, 2025]);
+        $this->assertSame('combined', $dashFeeder['interruptionMetricsPayload']['ens_scope']);
+        $this->assertSame(12, $dashFeeder['interruptionMetricsPayload']['ens_penyulang_id']);
+        $this->assertSame($g12Feeder['ens_analysis']['monthly_a'], $dashFeeder['interruptionMetricsPayload']['ens_monthly'][2026]);
+        $this->assertEqualsWithDelta(304.26, $dashFeeder['interruptionMetricsPayload']['ens_annual'][2026]['total_kwh'], 0.02);
 
         // ENS drilldowns return sorted top-kWh events first & respect ULP boundary
         $dEnsMo = $analytics->getDrilldownDetails($ctx, 'ens_month', '1', ['target_year' => 2026]);

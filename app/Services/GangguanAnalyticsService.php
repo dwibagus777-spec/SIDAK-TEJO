@@ -327,12 +327,13 @@ class GangguanAnalyticsService
      */
     public function getDashboardSyncPayload(array $ctx, array $allTrendYears): array
     {
-        $yearA = (int)$ctx['year_a'];
-        $yearB = (int)$ctx['year_b'];
-        $ulpId = $ctx['ulp_id'];
+        $yearA       = (int)$ctx['year_a'];
+        $yearB       = (int)$ctx['year_b'];
+        $ulpId       = $ctx['ulp_id'];
+        $penyulangId = !empty($ctx['penyulang_id']) ? (int)$ctx['penyulang_id'] : null;
 
         $availableYears = $ctx['available_years'];
-        $yoySummary     = $this->getSharedYoYSummary($yearA, $yearB, $ulpId, null);
+        $yoySummary     = $this->getSharedYoYSummary($yearA, $yearB, $ulpId, $penyulangId);
 
         $gangguanStats = [
             'current_ytd'       => $yoySummary['total_a'],
@@ -347,7 +348,7 @@ class GangguanAnalyticsService
             'last_year'         => $yearB,
         ];
 
-        $rows = $this->filterRows($this->loadAllNormalizedRows(), $ulpId, null);
+        $rows = $this->filterRows($this->loadAllNormalizedRows(), $ulpId, $penyulangId);
 
         $cumulativeGangguanYoY     = [];
         $monthlyFaultCurrentByYear = [];
@@ -356,6 +357,7 @@ class GangguanAnalyticsService
         $monthlyCauseByYear        = [];
         $monthlyDeviceByYear       = [];
         $monthlyEnsByYear          = [];
+        $monthlyEnsCntByYear       = [];
         $annualEnsByYear           = [];
         $topFeedersByYear          = [];
 
@@ -367,8 +369,9 @@ class GangguanAnalyticsService
             }
 
             $ensSumYr = $this->summarizeEnsByMonth($yrRows);
-            $monthlyEnsByYear[$yr] = $ensSumYr['monthly'];
-            $annualEnsByYear[$yr]  = [
+            $monthlyEnsByYear[$yr]    = $ensSumYr['monthly'];
+            $monthlyEnsCntByYear[$yr] = $ensSumYr['monthly_cnt'];
+            $annualEnsByYear[$yr]     = [
                 'year'         => $yr,
                 'total_kwh'    => $ensSumYr['total_kwh'],
                 'valid_events' => $ensSumYr['valid_events'],
@@ -456,8 +459,11 @@ class GangguanAnalyticsService
             'fault_current'     => $monthlyFaultCurrentByYear,
             'fault_current_avg' => $faultCurrentAvgByYear,
             'ens_monthly'       => $monthlyEnsByYear,
+            'ens_monthly_cnt'   => $monthlyEnsCntByYear,
             'ens_annual'        => $annualEnsByYear,
             'ens_meta'          => $this->getEnsFormulaMeta(),
+            'ens_scope'         => $ctx['scope'] ?? 'year_a',
+            'ens_penyulang_id'  => $penyulangId,
             'relay'             => $monthlyRelayByYear,
             'cause'             => $monthlyCauseByYear,
             'device'            => $monthlyDeviceByYear,
@@ -587,6 +593,8 @@ class GangguanAnalyticsService
             'focus_label'        => $focusLabel,
             'monthly_a'          => $sumA['monthly'],
             'monthly_b'          => $sumB['monthly'],
+            'monthly_cnt_a'      => $sumA['monthly_cnt'],
+            'monthly_cnt_b'      => $sumB['monthly_cnt'],
             'monthly_focus'      => $sumFocus['monthly'],
             'total_a'            => $sumA['total_kwh'],
             'total_b'            => $sumB['total_kwh'],
@@ -1749,9 +1757,19 @@ class GangguanAnalyticsService
                     $cmp = ((float)($b['energy_not_supplied_kwh'] ?? 0) <=> (float)($a['energy_not_supplied_kwh'] ?? 0));
                     return $cmp !== 0 ? $cmp : strcmp((string)$b['interruption_started_at'], (string)$a['interruption_started_at']);
                 });
-                $yrKwh    = round(array_sum(array_map(static fn(array $r): float => (float)($r['energy_not_supplied_kwh'] ?? 0), $matchingRows)), 2);
-                $title    = "Total ENS (kWh) — {$yrLabel}";
-                $subtitle = 'Total ENS: ' . number_format($yrKwh, 2, ',', '.') . ' kWh dari ' . count($matchingRows) . ' trip • Urutan penyumbang kWh terbesar • Kolom ( Kwh )';
+                $yrKwh        = round(array_sum(array_map(static fn(array $r): float => (float)($r['energy_not_supplied_kwh'] ?? 0), $matchingRows)), 2);
+                $yrMonthlySum = ($keyUpper === 'COMBINED' || $keyUpper === 'GABUNGAN')
+                    ? round(
+                        $this->summarizeEnsByMonth(array_filter($matchingRows, static fn(array $r): bool => $r['year'] === $yearA))['total_kwh']
+                        + ($yearA === $yearB ? 0.0 : $this->summarizeEnsByMonth(array_filter($matchingRows, static fn(array $r): bool => $r['year'] === $yearB))['total_kwh']),
+                        2
+                    )
+                    : $this->summarizeEnsByMonth($matchingRows)['total_kwh'];
+                $roundDiff    = round(abs($yrMonthlySum - $yrKwh), 2);
+                $title        = "Total ENS (kWh) — {$yrLabel}";
+                $subtitle     = 'Total ENS baris: ' . number_format($yrKwh, 2, ',', '.') . ' kWh dari ' . count($matchingRows) . ' trip'
+                    . ($roundDiff >= 0.01 ? (' • Total chart (sum 2-desimal bulanan): ' . number_format($yrMonthlySum, 2, ',', '.') . ' kWh (selisih pembulatan: ' . number_format($roundDiff, 2, ',', '.') . ' kWh)') : '')
+                    . ' • Kolom ( Kwh )';
                 break;
         }
 

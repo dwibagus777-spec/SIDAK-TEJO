@@ -1104,6 +1104,8 @@ class Dashboard extends BaseController
             'gangguanSyncStatus'         => $gangguanSyncStatus,
             'gangguanYearA'              => $gangguanCtx['year_a'],
             'gangguanYearB'              => $gangguanCtx['year_b'],
+            'gangguanScope'              => $gangguanCtx['scope'] ?? 'year_a',
+            'gangguanPenyulangId'        => $gangguanCtx['penyulang_id'] ?? null,
             'availableInterruptionYears' => $availableInterruptionYears,
             'cumulativeGangguan'         => $cumulativeGangguan,
             'cumulativeGangguanYoY'      => $cumulativeGangguanYoY,

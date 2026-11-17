@@ -43,6 +43,7 @@ $routes->match(['GET', 'POST'], 'master-assets/execute-bom-pelaksana', 'MigrateC
 $routes->match(['GET', 'POST'], 'master-assets/execute-batch-ingest', 'MigrateController::executeBatchIngestAssets');
 $routes->match(['GET', 'POST'], 'master-assets/execute-batch-translines', 'MigrateController::executeBatchTranslines');
 $routes->match(['GET', 'POST'], 'master-assets/restore-eviden-photos', 'MigrateController::restoreEvidenPhotos');
+$routes->match(['GET', 'POST'], 'master-assets/reconcile-har-gtt', 'MigrateController::reconcileHarGtt');
 
 // Phase B.3: Network Intelligence Platform Routes (Strictly Read-Only)
 $routes->get('network-intelligence/audit', 'NetworkIntelligenceController::b3Audit');

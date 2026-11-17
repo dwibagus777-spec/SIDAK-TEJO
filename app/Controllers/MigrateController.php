@@ -267,6 +267,15 @@ class MigrateController extends BaseController
                 }
             } catch (\Throwable $eProto) {}
 
+            // Audited Reconciliation: Move legacy HAR GARDU / HAR_GARDU pelaksana labels to canonical HAR GTT (run before slow Phase D3 loops)
+            try {
+                $harGttSvc = new \App\Services\HarGttReconciliationService($db);
+                $harGttRes = $harGttSvc->reconcile(true, 'autoMigrate');
+                if (!empty($harGttRes['changed'])) {
+                    $executed[] = 'reconciled_har_gtt_temuan_' . (int)$harGttRes['temuan_updated'] . '_wo_' . (int)$harGttRes['work_orders_updated'];
+                }
+            } catch (\Throwable $eHarGtt) {}
+
             // Phase D3 Hotfix: Reconcile 22 non-pole transline violations into nearest physical JTM poles
             try {
                 $gisTlSvc = new \App\Services\GisTranslineService();
@@ -293,15 +302,6 @@ class MigrateController extends BaseController
                     $executed[] = 'reconciled_row_trees_' . $rowSyncRes['unique_trees_count'];
                 }
             } catch (\Throwable $eRow) {}
-
-            // Audited Reconciliation: Move legacy HAR GARDU / HAR_GARDU pelaksana labels to canonical HAR GTT
-            try {
-                $harGttSvc = new \App\Services\HarGttReconciliationService($db);
-                $harGttRes = $harGttSvc->reconcile(true, 'autoMigrate');
-                if (!empty($harGttRes['changed'])) {
-                    $executed[] = 'reconciled_har_gtt_temuan_' . (int)$harGttRes['temuan_updated'] . '_wo_' . (int)$harGttRes['work_orders_updated'];
-                }
-            } catch (\Throwable $eHarGtt) {}
 
             // FK repair removed per invariant #11: Pipeline ingestion remains LOCKED.
             // Unsafe fuzzy UPDATE (kode_asset LIKE) removed. Controlled FK repair must use
@@ -5658,6 +5658,30 @@ class MigrateController extends BaseController
             'rejected_count'           => $rejectedCount,
             'errors'                   => $errors,
             'missing_sample'           => array_slice(array_values(array_unique($missingFiles)), 0, 20),
+        ]);
+    }
+
+    /**
+     * Targeted, fast, audited reconciliation of legacy 'HAR GARDU' pelaksana records to 'HAR GTT'.
+     * Protected via _remap (Admin session / CLI / AUDIT_SECRET_KEY). Defaults to dry-run unless execute=1.
+     */
+    public function reconcileHarGtt()
+    {
+        $execute = filter_var(
+            $this->request->getGet('execute') ?? $this->request->getPost('execute') ?? false,
+            FILTER_VALIDATE_BOOLEAN
+        );
+        $actor = is_cli() ? 'cli' : (string)(session('username') ?: 'master-assets/reconcile-har-gtt');
+        $db    = \Config\Database::connect('default');
+        $svc   = new \App\Services\HarGttReconciliationService($db);
+        $res   = $svc->reconcile($execute, $actor);
+        if (!empty($res['audit_file'])) {
+            $res['audit_file'] = basename((string)$res['audit_file']);
+        }
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'result' => $res,
         ]);
     }
 }

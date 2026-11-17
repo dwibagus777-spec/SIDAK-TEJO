@@ -2,13 +2,56 @@
 /**
  * Shared accessible chart drill-down modal for `/gangguan` and `/dashboard`.
  * Displays real aggregated breakdowns, Pareto cumulative sequence, and full
- * navigable/searchable matching events (collapsible accordion, pagination, and "Muat Lagi").
+ * navigable/searchable matching events (collapsible accordion, explicit scroll container,
+ * separated Matched / Loaded / In-Viewport counters, pagination, and "Muat Lagi").
  */
 ?>
+<style>
+    #gangguanDrilldownModal .gg-drill-table-scroll {
+        max-height: 390px;
+        overflow-y: auto !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        position: relative;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        scrollbar-gutter: stable;
+    }
+    @media (max-width: 767.98px) {
+        #gangguanDrilldownModal .gg-drill-table-scroll {
+            max-height: 52vh;
+        }
+    }
+    #gangguanDrilldownModal .gg-drill-table-scroll thead th {
+        position: sticky;
+        top: 0;
+        z-index: 4;
+        background-color: #f8fafc !important;
+        box-shadow: inset 0 -1px 0 #cbd5e1;
+        white-space: nowrap;
+    }
+    #gangguanDrilldownModal .gg-drill-pareto-scroll {
+        max-height: 215px;
+        overflow-y: auto !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+    }
+    #gangguanDrilldownModal .gg-drill-pareto-scroll thead th {
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        background-color: #fef3c7 !important;
+        box-shadow: inset 0 -1px 0 #fde68a;
+    }
+</style>
 <div class="modal fade" id="gangguanDrilldownModal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="gangguanDrilldownTitle" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
         <div class="modal-content border-0 shadow-lg rounded-4">
-            <div class="modal-header border-bottom bg-light py-3 px-4">
+            <div class="modal-header border-bottom bg-light py-2.5 px-4">
                 <div class="d-flex align-items-start gap-2.5 pe-3">
                     <span class="badge bg-primary-subtle text-primary p-2 rounded-3 mt-0.5"><i class="fas fa-chart-simple fs-6" aria-hidden="true"></i></span>
                     <div>
@@ -51,6 +94,7 @@
                 try { bootstrap.Modal.getOrCreateInstance(modalEl).hide(); } catch (e) {}
                 return;
             }
+            updateViewportVisibleRange();
             var closeBtn = modalEl.querySelector('.btn-close');
             if (closeBtn && typeof closeBtn.focus === 'function') {
                 try { closeBtn.focus({ preventScroll: true }); } catch (e) {}
@@ -97,7 +141,7 @@
                 ' <span class="text-muted">(' + Number(it.pct || 0).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%)</span>' +
             '</span>';
         }).join('');
-        return '<div class="mb-3"><div class="fw-bold text-dark mb-1.5" style="font-size: 12px;">' + esc(title) + '</div><div class="d-flex flex-wrap gap-1.5">' + pills + '</div></div>';
+        return '<div class="mb-2.5"><div class="fw-bold text-dark mb-1" style="font-size: 11.5px;">' + esc(title) + '</div><div class="d-flex flex-wrap gap-1.5">' + pills + '</div></div>';
     }
 
     function renderEventRowHtml(ev, fallbackNum) {
@@ -148,15 +192,84 @@
         return state.baseEndpoint + '?' + qs.toString();
     }
 
-    function updateEventsSectionUi(state) {
+    /**
+     * Measures which table rows are actually visible inside `#ggDrillEventsTableWrap`'s
+     * scroll viewport right now and updates `#ggDrillStatViewport` + `#ggDrillFooterRangeText`.
+     */
+    function updateViewportVisibleRange() {
+        var wrap = document.getElementById('ggDrillEventsTableWrap');
+        var tbody = document.getElementById('ggDrillEventsTbody');
+        var vpBadge = document.getElementById('ggDrillStatViewport');
+        var footerRange = document.getElementById('ggDrillFooterRangeText');
+        if (!wrap || !tbody || !activeDrillState) return;
+
+        var trs = tbody.querySelectorAll('tr[data-row-num]');
+        var loadedCnt = trs.length;
+        var totalMatch = Number(activeDrillState.totalMatching || 0);
+        var filtMatch = Number(typeof activeDrillState.filteredMatching === 'number' ? activeDrillState.filteredMatching : totalMatch);
+
+        if (!loadedCnt || filtMatch === 0) {
+            if (vpBadge) vpBadge.textContent = 'Tampil di layar: 0 baris';
+            if (footerRange) footerRange.textContent = 'Cocok: ' + filtMatch.toLocaleString('id-ID') + ' • Dimuat: 0 baris • Tampil: 0 baris';
+            return;
+        }
+
+        var wRect = wrap.getBoundingClientRect();
+        var thead = wrap.querySelector('thead');
+        var headerH = thead ? thead.getBoundingClientRect().height : 32;
+        var viewTop = wRect.top + headerH - 4;
+        var viewBottom = wRect.bottom + 4;
+
+        var firstInView = null;
+        var lastInView = null;
+        var inViewCount = 0;
+
+        for (var i = 0; i < trs.length; i++) {
+            var rRect = trs[i].getBoundingClientRect();
+            var rMid = (rRect.top + rRect.bottom) / 2;
+            if (rRect.height > 0 && rMid >= viewTop && rMid <= viewBottom) {
+                var rn = Number(trs[i].getAttribute('data-row-num') || (i + 1));
+                if (firstInView === null) firstInView = rn;
+                lastInView = rn;
+                inViewCount++;
+            }
+        }
+
+        var loadedFirst = Number(trs[0].getAttribute('data-row-num') || 1);
+        var loadedLast = Number(trs[loadedCnt - 1].getAttribute('data-row-num') || loadedCnt);
+        if (firstInView === null) {
+            firstInView = loadedFirst;
+            lastInView = Math.min(loadedLast, loadedFirst + 6);
+        }
+
+        var canScrollMoreInLoaded = loadedCnt > inViewCount;
+        var vpText = 'Sedang tampil: #' + firstInView.toLocaleString('id-ID') + '–#' + lastInView.toLocaleString('id-ID')
+            + (canScrollMoreInLoaded ? (' (gulir tabel untuk #' + loadedFirst.toLocaleString('id-ID') + '–#' + loadedLast.toLocaleString('id-ID') + ')') : '');
+
+        if (vpBadge) {
+            vpBadge.textContent = vpText;
+        }
+        if (footerRange) {
+            var hasSub = Boolean(activeDrillState.search || activeDrillState.eventCategory || activeDrillState.eventUlp);
+            var matchStr = hasSub
+                ? ('Cocok: ' + filtMatch.toLocaleString('id-ID') + ' / ' + totalMatch.toLocaleString('id-ID'))
+                : ('Cocok: ' + totalMatch.toLocaleString('id-ID'));
+            var loadStr = 'Dimuat: ' + loadedCnt.toLocaleString('id-ID') + ' baris (#' + loadedFirst.toLocaleString('id-ID') + '–#' + loadedLast.toLocaleString('id-ID') + ')';
+            var viewStr = 'Tampil di area gulir: #' + firstInView.toLocaleString('id-ID') + '–#' + lastInView.toLocaleString('id-ID');
+            footerRange.textContent = matchStr + ' • ' + loadStr + ' • ' + viewStr;
+        }
+    }
+
+    function updateEventsSectionUi(state, skipTbodyRebuild) {
         var secEl        = document.getElementById('ggDrillEventsSection');
         if (secEl) secEl.setAttribute('data-busy', state.busy ? '1' : '0');
         var tbody        = document.getElementById('ggDrillEventsTbody');
         var emptyBox     = document.getElementById('ggDrillEventsEmpty');
         var tableWrap    = document.getElementById('ggDrillEventsTableWrap');
         var visSummary   = document.getElementById('ggDrillVisibilitySummary');
+        var statMatched  = document.getElementById('ggDrillStatMatched');
+        var statLoaded   = document.getElementById('ggDrillStatLoaded');
         var countPill    = document.getElementById('ggDrillCountPill');
-        var footerRange  = document.getElementById('ggDrillFooterRangeText');
         var btnLoadMore  = document.getElementById('btnGgDrillLoadMore');
         var btnLoadAll   = document.getElementById('btnGgDrillLoadAll');
         var btnFirst     = document.getElementById('btnGgDrillPageFirst');
@@ -181,6 +294,16 @@
                 ? (filtMatch.toLocaleString('id-ID') + ' / ' + totalMatch.toLocaleString('id-ID') + ' cocok')
                 : (totalMatch.toLocaleString('id-ID') + ' kejadian');
         }
+        if (statMatched) {
+            statMatched.textContent = hasSubFilter
+                ? ('Cocok Filter: ' + filtMatch.toLocaleString('id-ID') + ' dari ' + totalMatch.toLocaleString('id-ID') + ' kejadian')
+                : ('Cocok Filter: ' + totalMatch.toLocaleString('id-ID') + ' kejadian');
+        }
+        if (statLoaded) {
+            statLoaded.textContent = visibleCnt > 0
+                ? ('Telah Dimuat: ' + visibleCnt.toLocaleString('id-ID') + ' baris (#' + startRow.toLocaleString('id-ID') + '–#' + endRow.toLocaleString('id-ID') + ')' + (remaining > 0 ? (' • belum dimuat: ' + remaining.toLocaleString('id-ID')) : ' • semua dimuat'))
+                : 'Telah Dimuat: 0 baris';
+        }
 
         if (visSummary) {
             if (filtMatch === 0) {
@@ -197,7 +320,7 @@
             }
         }
 
-        if (tbody) {
+        if (tbody && !skipTbodyRebuild) {
             tbody.innerHTML = rows.map(function(ev, i) {
                 return renderEventRowHtml(ev, state.pageStartOffset + i + 1);
             }).join('');
@@ -208,14 +331,6 @@
         var pageSize   = Math.max(1, Number(state.limit || 100));
         var totalPages = Math.max(1, Math.ceil(filtMatch / pageSize));
         var curPage    = Math.min(totalPages, Math.floor(state.pageStartOffset / pageSize) + 1);
-
-        if (footerRange) {
-            if (filtMatch === 0) {
-                footerRange.textContent = '0 dari ' + totalMatch.toLocaleString('id-ID') + ' kejadian';
-            } else {
-                footerRange.textContent = 'Terlihat: ' + visibleCnt.toLocaleString('id-ID') + ' baris (' + startRow.toLocaleString('id-ID') + '–' + endRow.toLocaleString('id-ID') + ' dari ' + filtMatch.toLocaleString('id-ID') + (hasSubFilter ? (' terfilter / total ' + totalMatch.toLocaleString('id-ID')) : '') + ')';
-            }
-        }
 
         if (pageInd) {
             pageInd.textContent = 'Hal ' + curPage.toLocaleString('id-ID') + ' / ' + totalPages.toLocaleString('id-ID');
@@ -236,6 +351,8 @@
             btnLoadAll.disabled = Boolean(state.busy);
             btnLoadAll.innerHTML = '<i class="fas fa-layer-group me-1" aria-hidden="true"></i>Tampilkan Semua (' + filtMatch.toLocaleString('id-ID') + ')';
         }
+
+        updateViewportVisibleRange();
     }
 
     function showInlinePageError(msg, retryFn) {
@@ -267,8 +384,9 @@
         if (!state || state.busy) return;
         state.busy = true;
         clearInlinePageError();
-        updateEventsSectionUi(state);
+        updateEventsSectionUi(state, true);
 
+        var prevCount = state.visibleRows.length;
         var reqOffset = typeof targetOffset === 'number' ? Math.max(0, targetOffset) : state.offset;
         var reqLimit  = typeof customLimit === 'number' ? customLimit : state.limit;
         var url       = buildQueryUrl(state, reqOffset, reqLimit);
@@ -296,11 +414,25 @@
                     state.visibleRows     = incoming;
                     state.offset          = reqOffset + incoming.length;
                 }
-                updateEventsSectionUi(state);
+                updateEventsSectionUi(state, false);
+
+                var wrap = document.getElementById('ggDrillEventsTableWrap');
+                if (wrap) {
+                    if (mode === 'append' && incoming.length > 0) {
+                        var firstNewNum = Number(incoming[0].row_num || (prevCount + 1));
+                        var newTr = wrap.querySelector('tr[data-row-num="' + firstNewNum + '"]');
+                        if (newTr) {
+                            wrap.scrollTop = Math.max(0, newTr.offsetTop - 36);
+                        }
+                    } else if (mode === 'page') {
+                        wrap.scrollTop = 0;
+                    }
+                    updateViewportVisibleRange();
+                }
             })
             .catch(function(err) {
                 state.busy = false;
-                updateEventsSectionUi(state);
+                updateEventsSectionUi(state, true);
                 showInlinePageError(err && err.message ? err.message : 'kesalahan jaringan', function() {
                     fetchDrillSlice(state, mode, targetOffset, customLimit);
                 });
@@ -369,7 +501,7 @@
                 var html    = '';
 
                 // KPI summary strip
-                html += '<div class="row g-2 mb-3">' +
+                html += '<div class="row g-2 mb-2.5">' +
                     '<div class="col-6 col-md-3"><div class="p-2.5 rounded-3 border bg-light h-100">' +
                         '<div class="text-muted" style="font-size: 11px;">Kejadian Cocok</div>' +
                         '<div class="fs-5 fw-bold text-primary font-monospace" id="ggDrillTotalMatchingVal">' + Number(d.total_matching || 0).toLocaleString('id-ID') + '</div>' +
@@ -394,12 +526,12 @@
 
                 // Optional Pareto cumulative ordered sequence
                 if (Array.isArray(d.pareto_sequence) && d.pareto_sequence.length) {
-                    html += '<div class="mb-3 border rounded-3 overflow-hidden">' +
+                    html += '<div class="mb-2.5 border rounded-3 overflow-hidden">' +
                         '<div class="px-3 py-2 bg-warning-subtle border-bottom fw-bold text-dark d-flex justify-content-between align-items-center" style="font-size: 12px;">' +
                             '<span><i class="fas fa-chart-line text-danger me-1" aria-hidden="true"></i>Urutan Kategori s.d. Titik Kumulatif #' + d.pareto_sequence.length + '</span>' +
                             '<span class="font-monospace">Akumulasi: ' + Number(d.pareto_point ? d.pareto_point.cumulative_pct : 0).toFixed(1) + '%</span>' +
                         '</div>' +
-                        '<div class="table-responsive" style="max-height: 210px;"><table class="table table-sm table-hover mb-0" style="font-size: 11.5px;">' +
+                        '<div class="table-responsive gg-drill-pareto-scroll"><table class="table table-sm table-hover mb-0" style="font-size: 11.5px;">' +
                             '<thead class="table-light sticky-top"><tr><th>#</th><th>Kode Penyebab</th><th>Kategori Kanonik</th><th class="text-end">Jumlah</th><th class="text-end">Kontribusi</th><th class="text-end">Kumulatif</th><th>Status</th></tr></thead><tbody>';
                     d.pareto_sequence.forEach(function(p) {
                         html += '<tr>' +
@@ -416,7 +548,7 @@
                 }
 
                 // Aggregated contextual breakdowns
-                html += '<div class="row g-2 mb-2">' +
+                html += '<div class="row g-2 mb-1">' +
                     '<div class="col-md-6">' + renderChips('Sebaran ULP', bd.by_ulp) + renderChips('Famili Peralatan', bd.by_equipment_family) + '</div>' +
                     '<div class="col-md-6">' + renderChips('Kategori & Relai', [].concat(bd.by_category || [], bd.by_relay || [])) + '</div>' +
                 '</div>';
@@ -434,7 +566,7 @@
 
                 // Collapsible Accordion / Dropdown for Full Event List + Search + Pagination + Load More
                 html += '<div class="border rounded-3 overflow-hidden" id="ggDrillEventsSection">' +
-                    '<button type="button" class="btn btn-light w-100 px-3 py-2.5 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2 text-start rounded-0" ' +
+                    '<button type="button" class="btn btn-light w-100 px-3 py-2 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2 text-start rounded-0" ' +
                         'id="ggDrillEventsToggleBtn" data-bs-toggle="collapse" data-bs-target="#ggDrillEventsCollapse" aria-expanded="true" aria-controls="ggDrillEventsCollapse" style="font-size: 12.5px;">' +
                         '<span class="fw-bold text-dark d-flex align-items-center gap-1.5">' +
                             '<i class="fas fa-list-check text-primary" aria-hidden="true"></i>' +
@@ -447,6 +579,14 @@
                         '</span>' +
                     '</button>' +
                     '<div class="collapse show" id="ggDrillEventsCollapse">' +
+                        '<div class="px-3 py-1.5 bg-white border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2" style="font-size: 11px;">' +
+                            '<div class="d-flex flex-wrap align-items-center gap-2">' +
+                                '<span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill font-monospace px-2.5 py-1" id="ggDrillStatMatched">Cocok Filter: 0</span>' +
+                                '<span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill font-monospace px-2.5 py-1" id="ggDrillStatLoaded">Telah Dimuat: 0 baris</span>' +
+                                '<span class="badge bg-light text-dark border rounded-pill font-monospace px-2.5 py-1" id="ggDrillStatViewport">Sedang tampil: -</span>' +
+                            '</div>' +
+                            '<span class="text-muted" style="font-size: 10.5px;"><i class="fas fa-arrows-up-down me-1" aria-hidden="true"></i>Gulir tabel ke bawah atau klik Muat Lagi untuk seluruh baris</span>' +
+                        '</div>' +
                         '<div class="p-2.5 bg-light border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">' +
                             '<div class="d-flex flex-wrap align-items-center gap-1.5 flex-grow-1">' +
                                 '<div class="input-group input-group-sm" style="max-width: 260px;">' +
@@ -475,9 +615,9 @@
                         '</div>' +
                         '<div id="ggDrillInlineError" class="alert alert-warning rounded-0 mb-0 py-2 px-3 small d-none" role="alert"></div>' +
                         '<div id="ggDrillEventsEmpty" class="p-4 text-center text-muted small d-none">Tidak ada catatan kejadian yang cocok dengan pilihan dan filter aktif.</div>' +
-                        '<div class="table-responsive" id="ggDrillEventsTableWrap" style="max-height: 340px;">' +
+                        '<div class="table-responsive gg-drill-table-scroll" id="ggDrillEventsTableWrap">' +
                             '<table class="table table-sm table-hover align-middle mb-0" id="ggDrillEventsTable" style="font-size: 11.5px;">' +
-                                '<thead class="table-light sticky-top">' +
+                                '<thead class="table-light">' +
                                     '<tr>' +
                                         '<th class="text-center">#</th>' +
                                         '<th>Tanggal &amp; Durasi</th>' +
@@ -520,9 +660,9 @@
                 activeDrillState.visibleRows      = Array.isArray(d.events) ? d.events : [];
                 activeDrillState.offset           = activeDrillState.pageStartOffset + activeDrillState.visibleRows.length;
 
-                updateEventsSectionUi(activeDrillState);
+                updateEventsSectionUi(activeDrillState, false);
 
-                // Wire controls
+                var wrapEl    = document.getElementById('ggDrillEventsTableWrap');
                 var searchIn  = document.getElementById('ggDrillSearchInput');
                 var catSel    = document.getElementById('ggDrillCatSelect');
                 var ulpSel    = document.getElementById('ggDrillUlpSelect');
@@ -535,6 +675,12 @@
                 var btnPrev   = document.getElementById('btnGgDrillPagePrev');
                 var btnNext   = document.getElementById('btnGgDrillPageNext');
                 var btnLast   = document.getElementById('btnGgDrillPageLast');
+
+                if (wrapEl) {
+                    wrapEl.addEventListener('scroll', function() {
+                        updateViewportVisibleRange();
+                    }, { passive: true });
+                }
 
                 var triggerSubFilter = function() {
                     if (!activeDrillState) return;

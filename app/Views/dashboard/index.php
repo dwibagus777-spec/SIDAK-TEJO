@@ -2720,7 +2720,7 @@
                         </h6>
                         <small class="text-muted" style="font-size: 10px;">Data Inspeksi Fisik</small>
                     </div>
-                    <div class="table-responsive border rounded-3" style="max-height: 200px;">
+                    <div class="table-responsive border rounded-3" style="max-height: 200px; overflow-y: auto;">
                         <table class="table table-sm table-hover align-middle mb-0" style="font-size: 11px;">
                             <thead class="table-light sticky-top">
                                 <tr>
@@ -4437,7 +4437,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.bindDashboardGangguanRows = function() {
         if (!window.bindAccessibleAction || !window.openGangguanDrilldown) return;
-        var ulpFilterVal = <?= !empty($selectedUlpId) ? (int)$selectedUlpId : 'null' ?>;
+        var ulpFilterVal       = <?= !empty($selectedUlpId) ? (int)$selectedUlpId : 'null' ?>;
+        var penyulangFilterVal = <?= !empty($gangguanPenyulangId) ? (int)$gangguanPenyulangId : 'null' ?>;
+        var scopeFilterVal     = <?= json_encode($gangguanScope ?? 'year_a') ?>;
         document.querySelectorAll('#topFeedersGangguanTableBody tr.dash-top-feeder-row').forEach(function(tr) {
             if (tr.dataset.boundDrill === '1') return;
             tr.dataset.boundDrill = '1';
@@ -4449,7 +4451,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.openGangguanDrilldown({
                     endpoint: '<?= site_url('gangguan/drilldown') ?>',
                     triggerEl: tr,
-                    params: { dimension: 'feeder', key: feederName, year_a: yr, year_b: yr - 1, target_year: yr, ulp_id: ulpFilterVal }
+                    params: { dimension: 'feeder', key: feederName, year_a: yr, year_b: yr - 1, target_year: yr, scope: scopeFilterVal, ulp_id: ulpFilterVal, penyulang_id: penyulangFilterVal }
                 });
             });
         });
@@ -4464,7 +4466,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.openGangguanDrilldown({
                     endpoint: '<?= site_url('gangguan/drilldown') ?>',
                     triggerEl: tr,
-                    params: { dimension: 'canonical_cause', key: cCode, year_a: yr, year_b: yr - 1, target_year: yr, ulp_id: ulpFilterVal }
+                    params: { dimension: 'canonical_cause', key: cCode, year_a: yr, year_b: yr - 1, target_year: yr, scope: scopeFilterVal, ulp_id: ulpFilterVal, penyulang_id: penyulangFilterVal }
                 });
             });
         });

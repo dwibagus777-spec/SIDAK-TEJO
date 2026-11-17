@@ -458,7 +458,7 @@ $fullYearBTot = (int)($item3['year_b_total'] ?? 0);
                 <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size: 10.5px;"><?= esc($focusLabel) ?></span>
             </div>
             <div class="card-body d-flex flex-column justify-content-between gap-2">
-                <div class="p-3 rounded-3 bg-light border text-center">
+                <div class="p-3 rounded-3 bg-light border text-center gg-year-drill-card" data-yr-key="<?= $scope === 'combined' ? 'COMBINED' : ($scope === 'year_b' ? (int)$yearB : (int)$yearA) ?>" title="Klik untuk melihat seluruh kejadian pada fokus ini">
                     <div class="text-muted small fw-semibold mb-1">Total Gangguan (<?= esc($focusLabel) ?>)</div>
                     <div class="display-5 fw-bold text-dark font-monospace mb-0"><?= number_format($focusTotal) ?></div>
                     <div class="text-muted" style="font-size: 11px;">
@@ -467,14 +467,14 @@ $fullYearBTot = (int)($item3['year_b_total'] ?? 0);
                 </div>
                 <div class="row g-2" style="font-size: 12px;">
                     <div class="col-6">
-                        <div class="p-2 rounded-3 border border-start border-4 border-primary h-100">
+                        <div class="p-2 rounded-3 border border-start border-4 border-primary h-100 gg-year-drill-card" data-yr-key="<?= (int)$yearA ?>" title="Klik untuk melihat seluruh kejadian Tahun <?= (int)$yearA ?>">
                             <div class="text-muted" style="font-size: 10.5px;">Tahun <?= (int)$yearA ?></div>
                             <div class="fw-bold fs-5 text-dark font-monospace"><?= number_format($fullYearATot) ?></div>
                             <div class="text-muted" style="font-size: 10px;"><?= esc($periodInfo['yearA_period'] ?? '') ?></div>
                         </div>
                     </div>
                     <div class="col-6">
-                        <div class="p-2 rounded-3 border border-start border-4 border-secondary h-100">
+                        <div class="p-2 rounded-3 border border-start border-4 border-secondary h-100 gg-year-drill-card" data-yr-key="<?= (int)$yearB ?>" title="Klik untuk melihat seluruh kejadian Tahun <?= (int)$yearB ?>">
                             <div class="text-muted" style="font-size: 10.5px;">Tahun <?= (int)$yearB ?></div>
                             <div class="fw-bold fs-5 text-dark font-monospace"><?= number_format($fullYearBTot) ?></div>
                             <div class="text-muted" style="font-size: 10px;"><?= esc($periodInfo['yearB_period'] ?? '') ?></div>
@@ -1785,6 +1785,14 @@ $p12Rows     = $item12['rows'] ?? [];
                 var k = card.getAttribute('data-cat-key');
                 if (k && window.bindAccessibleAction) {
                     window.bindAccessibleAction(card, function() { openGgDetail('category', k, {}, card); });
+                }
+            });
+            document.querySelectorAll('.gg-year-drill-card').forEach(function(card) {
+                var k = card.getAttribute('data-yr-key');
+                if (k && window.bindAccessibleAction) {
+                    window.bindAccessibleAction(card, function() {
+                        openGgDetail('ens_year', k, k === 'COMBINED' ? {} : { target_year: parseInt(k, 10) }, card);
+                    });
                 }
             });
 

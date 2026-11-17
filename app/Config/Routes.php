@@ -1105,6 +1105,7 @@ $routes->match(['GET', 'POST'], 'api/transline-audit-crossfeeder', 'Api::transli
     $routes->get('gangguan', 'Gangguan::index');
     $routes->get('gangguan/create', 'Gangguan::create');
     $routes->post('gangguan/store', 'Gangguan::store');
+    $routes->post('gangguan/sync-sheets', 'Gangguan::syncSheets', ['filter' => 'role:administrator,admin,admin_pusat,admin_ulp,supervisor_up3,supervisor_ulp,inspeksi']);
     $routes->post('gangguan/preview-excel', 'Gangguan::previewExcel');
     $routes->post('gangguan/import-excel', 'Gangguan::importExcel');
     $routes->post('gangguan/delete/(:num)', 'Gangguan::delete/$1');

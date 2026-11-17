@@ -46,6 +46,32 @@ class CauseCodeResolutionService
             ];
         }
 
+        // Authoritative exact alias map for verified Google Sheets cause codes (works even if dictionary table already seeded)
+        $staticCanonicalAliases = [
+            'TIDAK DITEMUKAN'   => ['CAUSE_UNKNOWN_UNDER_INVESTIGATION', 'UNKNOWN_INVESTIGATION', 'Belum Diketahui / Nihil Temuan Patroli'],
+            'BELUM DIKETEMUKAN' => ['CAUSE_UNKNOWN_UNDER_INVESTIGATION', 'UNKNOWN_INVESTIGATION', 'Belum Diketahui / Nihil Temuan Patroli'],
+            'SIMPATETIK'        => ['CAUSE_UNKNOWN_UNDER_INVESTIGATION', 'UNKNOWN_INVESTIGATION', 'Trip Simpatetik Akibat Gangguan di Penyulang Lain'],
+            'MATERIAL'          => ['CAUSE_EQUIPMENT_FAILURE', 'EQUIPMENT_FAILURE', 'Kegagalan Material / Komponen Distribusi'],
+            'MATRIAL'           => ['CAUSE_EQUIPMENT_FAILURE', 'EQUIPMENT_FAILURE', 'Kegagalan Material / Komponen Distribusi'],
+            'OVER LOAD'         => ['CAUSE_CUSTOMER_IML_FAULT', 'CUSTOMER_IML_FAULT', 'Overload Trafo / Feeder'],
+            'OVERLOAD'          => ['CAUSE_CUSTOMER_IML_FAULT', 'CUSTOMER_IML_FAULT', 'Overload Trafo / Feeder'],
+            'FORCE MAJURE'      => ['CAUSE_LIGHTNING_SURGE', 'LIGHTNING_WEATHER', 'Force Majeure Cuaca Ekstrem / Badai'],
+            'FORCE MAJEURE'     => ['CAUSE_LIGHTNING_SURGE', 'LIGHTNING_WEATHER', 'Force Majeure Cuaca Ekstrem / Badai'],
+        ];
+
+        $upperRaw = strtoupper($cleanedRaw);
+        if (isset($staticCanonicalAliases[$upperRaw])) {
+            [$code, $cat, $lbl] = $staticCanonicalAliases[$upperRaw];
+            return [
+                'cause_raw'            => $cleanedRaw,
+                'cause_canonical_code' => $code,
+                'cause_category'       => $cat,
+                'cause_label'          => $lbl,
+                'cause_mapping_status' => 'RESOLVED',
+                'mapping_confidence'   => 1.00,
+            ];
+        }
+
         // Direct dictionary lookup (exact match case-insensitive)
         $builder = $this->db->table('cause_code_dictionary');
         $row = $builder->where('LOWER(source_raw_value)', strtolower($cleanedRaw))

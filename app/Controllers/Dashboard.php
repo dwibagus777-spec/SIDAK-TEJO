@@ -70,21 +70,21 @@ class Dashboard extends BaseController
         // Fetch All Dashboard Analytics Data (System-scoped or ULP-scoped, preventing empty role stats)
         $db = \Config\Database::connect();
 
+        // Synchronize interruption history with Google Sheets using the exact same service & TTL rule as /gangguan
+        $gangguanSyncService      = new \App\Services\GoogleSheetsGangguanSyncService($db);
+        $gangguanSyncStatus       = $gangguanSyncService->ensureSynced((string)$this->request->getGet('refresh_sync') === '1' && check_role(['administrator', 'admin', 'admin_pusat', 'admin_ulp', 'supervisor_up3', 'supervisor_ulp', 'inspeksi']));
+        $gangguanAnalyticsService = new \App\Services\GangguanAnalyticsService($db);
+        $gangguanCtx              = $gangguanAnalyticsService->resolveContext($this->request->getGet(), $role, $ulpId ? (int)$ulpId : null);
+
         // Available years in temuan & historical_feeder_interruptions database
         $yearsQuery = $db->table('temuan')
             ->select('DISTINCT YEAR(tanggal_temuan) as yr')
             ->where('tanggal_temuan IS NOT NULL')
             ->where('deleted_at IS NULL')
             ->get()->getResultArray();
-        $yearsGgnQuery = $db->tableExists('historical_feeder_interruptions')
-            ? $db->table('historical_feeder_interruptions')
-                ->select('DISTINCT YEAR(event_date) as yr')
-                ->where('event_date IS NOT NULL')
-                ->get()->getResultArray()
-            : [];
         $allYears = array_merge(
             array_map(fn($r) => (int)$r['yr'], $yearsQuery),
-            array_map(fn($r) => (int)$r['yr'], $yearsGgnQuery)
+            $gangguanCtx['available_years']
         );
         $availableTrendYears = array_values(array_unique(array_filter($allYears)));
         rsort($availableTrendYears);
@@ -92,7 +92,11 @@ class Dashboard extends BaseController
             $availableTrendYears = [(int)date('Y'), (int)date('Y') - 1];
         }
 
-        $trendYear = $this->request->getGet('trend_year') ? (int)$this->request->getGet('trend_year') : ($this->request->getGet('year') ? (int)$this->request->getGet('year') : ($availableTrendYears[0] ?? (int)date('Y')));
+        $trendYear = $this->request->getGet('trend_year')
+            ? (int)$this->request->getGet('trend_year')
+            : ($this->request->getGet('year_a')
+                ? (int)$gangguanCtx['year_a']
+                : ($this->request->getGet('year') ? (int)$this->request->getGet('year') : (int)$gangguanCtx['year_a']));
         if (!in_array($trendYear, $availableTrendYears)) {
             $trendYear = $availableTrendYears[0] ?? (int)date('Y');
         }
@@ -215,45 +219,16 @@ class Dashboard extends BaseController
         }
         unset($f);
 
-        // Real YoY Interruption Stats via InterruptionModel (identical source & filter contract as /gangguan)
-        $interruptionModel = new \App\Models\InterruptionModel();
-        $availableInterruptionYears = $interruptionModel->getAvailableYears();
-        $curYear  = !empty($availableInterruptionYears) ? (int)$availableInterruptionYears[0] : (int)date('Y');
-        $lastYear = isset($availableInterruptionYears[1]) ? (int)$availableInterruptionYears[1] : ($curYear - 1);
-
-        $compPeriod = $interruptionModel->getComparablePeriod($curYear, $lastYear, $ulpIdFilter, null);
-        $compMonths = (int)($compPeriod['comparable_months'] ?? 12);
-        $cntGgnCur  = $interruptionModel->getTotalByYearUpToMonth($curYear, $compMonths, $ulpIdFilter, null);
-        $cntGgnLast = $interruptionModel->getTotalByYearUpToMonth($lastYear, $compMonths, $ulpIdFilter, null);
-        $yoyPct = 0;
-        $yoyText = 'Stabil';
-        $yoyClass = 'text-muted';
-
-        if ($cntGgnLast > 0) {
-            $yoyPct = round((($cntGgnCur - $cntGgnLast) / $cntGgnLast) * 100, 1);
-            if ($yoyPct < 0) {
-                $yoyText = "{$yoyPct}% YoY (Membaik)";
-                $yoyClass = 'text-success';
-            } elseif ($yoyPct > 0) {
-                $yoyText = "+{$yoyPct}% YoY (Meningkat)";
-                $yoyClass = 'text-danger';
-            } else {
-                $yoyText = '0% YoY (Sama)';
-            }
-        } else {
-            $yoyText = 'Data pembanding n/a';
-        }
-
-        $gangguanStats = [
-            'current_ytd'       => $cntGgnCur,
-            'last_ytd'          => $cntGgnLast,
-            'yoy_pct'           => $yoyPct,
-            'yoy_text'          => $yoyText,
-            'yoy_class'         => $yoyClass,
-            'year'              => $curYear,
-            'last_year'         => $lastYear,
-            'comparable_period' => $compPeriod['comparable_period'] ?? 'YTD',
-        ];
+        // Shared Gangguan Analytics Payload (100% parity with /gangguan via GangguanAnalyticsService)
+        $gangguanPayload            = $gangguanAnalyticsService->getDashboardSyncPayload($gangguanCtx, $availableTrendYears);
+        $gangguanStats              = $gangguanPayload['gangguanStats'];
+        $availableInterruptionYears = $gangguanPayload['availableInterruptionYears'];
+        $cumulativeGangguan         = $gangguanPayload['cumulativeGangguan'];
+        $cumulativeGangguanYoY      = $gangguanPayload['cumulativeGangguanYoY'];
+        $interruptionMetricsPayload = $gangguanPayload['interruptionMetricsPayload'];
+        $causeBreakdownByYear       = $gangguanPayload['causeBreakdownByYear'];
+        $topFeedersGangguanByYear   = $gangguanPayload['topFeedersGangguanByYear'];
+        $topFeedersGangguanRows     = $topFeedersGangguanByYear[$trendYear] ?? [];
 
         // Real Monthly Trend YoY / Comparison Calculation
         $priorYearTotalQuery = $db->table('temuan')
@@ -581,267 +556,8 @@ class Dashboard extends BaseController
             'by_type'  => $assetByType,
         ];
 
-        // Cumulative gangguan per month (YoY multi-year series + selected year, using InterruptionModel for 100% parity with /gangguan)
-        $ulpWhereClause = "";
-        if ($ulpIdFilter !== null) {
-            $interruptionFields = $db->getFieldNames('historical_feeder_interruptions');
-            if (in_array('ulp_id', $interruptionFields, true)) {
-                $ulpWhereClause = " AND h.ulp_id = " . (int)$ulpIdFilter;
-            } else {
-                $uRow = $db->table('ulps')->select('nama_ulp')->where('id', $ulpIdFilter)->get()->getRowArray();
-                $cleanU = $uRow ? $db->escapeLikeString(trim(str_ireplace('ULP', '', (string)$uRow['nama_ulp']))) : '';
-                if ($cleanU !== '' && in_array('ulp_name', $interruptionFields, true)) {
-                    $ulpWhereClause = " AND h.ulp_name LIKE '%" . $cleanU . "%'";
-                } else {
-                    $ulpWhereClause = " AND p.ulp_id = " . (int)$ulpIdFilter;
-                }
-            }
-        }
-
-        $monthlyByYear = [];
-        foreach ($availableInterruptionYears as $yr) {
-            $monthlyByYear[(int)$yr] = $interruptionModel->getMonthlyByYear((int)$yr, $ulpIdFilter, null);
-        }
-        krsort($monthlyByYear);
-
-        // Determine max recorded month per year so 2026 is strictly Jan–Okt without flat repeated padding or fake zeros
-        $maxMonthPerYear = [];
-        if ($db->tableExists('historical_feeder_interruptions')) {
-            $mRes = $db->query("SELECT YEAR(h.event_date) yr, MAX(MONTH(h.event_date)) max_mo FROM historical_feeder_interruptions h WHERE h.event_date IS NOT NULL " . $ulpWhereClause . " GROUP BY yr")->getResultArray();
-            foreach ($mRes as $mr) {
-                $maxMonthPerYear[(int)$mr['yr']] = (int)$mr['max_mo'];
-            }
-        }
-
-        $cumulativeGangguanYoY = [];
-        foreach ($monthlyByYear as $yr => $monthsArr) {
-            $runSum = 0;
-            $cumArr = [];
-            $maxMo = $maxMonthPerYear[(int)$yr] ?? 12;
-            if ((int)$yr === (int)date('Y')) {
-                $maxMo = min((int)date('n'), $maxMo);
-            }
-            for ($m = 1; $m <= 12; $m++) {
-                if ($m <= $maxMo) {
-                    $runSum += (int)($monthsArr[$m] ?? 0);
-                    $cumArr[$m] = $runSum;
-                } else {
-                    // Strictly null for future unrecorded months; NO horizontal line padding
-                    $cumArr[$m] = null;
-                }
-            }
-            if ($runSum > 0 || (int)$yr === (int)date('Y')) {
-                $cumulativeGangguanYoY[(int)$yr] = [
-                    'year'       => (int)$yr,
-                    'total'      => (int)$runSum,
-                    'max_month'  => $maxMo,
-                    'has_source' => in_array((int)$yr, $availableInterruptionYears, true),
-                    'monthly'    => array_values($monthsArr),
-                    'cumulative' => array_values($cumArr),
-                ];
-            }
-        }
-        $cumulativeGangguan = $cumulativeGangguanYoY[$trendYear]['cumulative'] ?? array_fill(0, 12, null);
-
-        // Zero-reload metric series: Fault Current (A), Protection Relay Trips, and Cause Category Trips
-        $monthlyFaultCurrentByYear = [];
-        $monthlyRelayByYear = [];
-        $monthlyCauseByYear = [];
-
-        if ($db->tableExists('historical_feeder_interruptions')) {
-            // 1. Fault current (A)
-            if ($db->fieldExists('fault_current_amperes', 'historical_feeder_interruptions')) {
-                $currRows = $db->query(
-                    "SELECT YEAR(h.event_date) yr, MONTH(h.event_date) mo,
-                            AVG(NULLIF(h.fault_current_amperes, 0)) avg_curr,
-                            COUNT(CASE WHEN h.fault_current_amperes > 0 THEN 1 END) cnt_curr
-                     FROM historical_feeder_interruptions h
-                     WHERE h.event_date IS NOT NULL " . $ulpWhereClause . "
-                     GROUP BY yr, mo
-                     ORDER BY yr DESC, mo ASC"
-                )->getResultArray();
-                foreach ($availableInterruptionYears as $ay) {
-                    $monthlyFaultCurrentByYear[(int)$ay] = array_fill(1, 12, null);
-                }
-                foreach ($currRows as $cr) {
-                    $cy = (int)$cr['yr'];
-                    $cm = (int)$cr['mo'];
-                    if (isset($monthlyFaultCurrentByYear[$cy]) && (int)$cr['cnt_curr'] > 0) {
-                        $monthlyFaultCurrentByYear[$cy][$cm] = round((float)$cr['avg_curr'], 1);
-                    }
-                }
-            }
-
-            // 2. Protection Relay
-            if ($db->fieldExists('relay_trip_type', 'historical_feeder_interruptions')) {
-                $relayRows = $db->query(
-                    "SELECT YEAR(h.event_date) yr, MONTH(h.event_date) mo,
-                            COALESCE(NULLIF(TRIM(h.relay_trip_type), ''), 'TIDAK_TERCATAT') relay_type,
-                            COUNT(h.id) cnt
-                     FROM historical_feeder_interruptions h
-                     WHERE h.event_date IS NOT NULL " . $ulpWhereClause . "
-                     GROUP BY yr, mo, relay_type
-                     ORDER BY yr DESC, mo ASC"
-                )->getResultArray();
-                foreach ($relayRows as $rr) {
-                    $ry = (int)$rr['yr'];
-                    $rm = (int)$rr['mo'];
-                    $rtype = (string)$rr['relay_type'];
-                    if (!isset($monthlyRelayByYear[$ry][$rtype])) {
-                        $monthlyRelayByYear[$ry][$rtype] = array_fill(1, 12, null);
-                    }
-                    $monthlyRelayByYear[$ry][$rtype][$rm] = (int)$rr['cnt'];
-                }
-            }
-
-            // 3. Cause Category
-            $cCatRows = $db->query(
-                "SELECT YEAR(h.event_date) yr, MONTH(h.event_date) mo,
-                        COALESCE(NULLIF(TRIM(h.cause_category), ''), 'LAIN-LAIN') cat,
-                        COUNT(h.id) cnt
-                 FROM historical_feeder_interruptions h
-                 WHERE h.event_date IS NOT NULL " . $ulpWhereClause . "
-                 GROUP BY yr, mo, cat
-                 ORDER BY yr DESC, mo ASC"
-            )->getResultArray();
-            foreach ($cCatRows as $ccr) {
-                $cy = (int)$ccr['yr'];
-                $cm = (int)$ccr['mo'];
-                $cat = (string)$ccr['cat'];
-                if (!isset($monthlyCauseByYear[$cy][$cat])) {
-                    $monthlyCauseByYear[$cy][$cat] = array_fill(1, 12, null);
-                }
-                $monthlyCauseByYear[$cy][$cat][$cm] = (int)$ccr['cnt'];
-            }
-
-            // 4. Switching Device Type (PMT vs RECL-PMCB)
-            $monthlyDeviceByYear = [];
-            if ($db->fieldExists('switching_device_type', 'historical_feeder_interruptions')) {
-                $devRows = $db->query(
-                    "SELECT YEAR(h.event_date) yr, MONTH(h.event_date) mo,
-                            COALESCE(NULLIF(TRIM(h.switching_device_type), ''), 'TIDAK_TERCATAT') dev_type,
-                            COUNT(h.id) cnt
-                     FROM historical_feeder_interruptions h
-                     WHERE h.event_date IS NOT NULL " . $ulpWhereClause . "
-                     GROUP BY yr, mo, dev_type
-                     ORDER BY yr DESC, mo ASC"
-                )->getResultArray();
-                foreach ($devRows as $dr) {
-                    $dy = (int)$dr['yr'];
-                    $dm = (int)$dr['mo'];
-                    $dtype = (string)$dr['dev_type'];
-                    if (!isset($monthlyDeviceByYear[$dy][$dtype])) {
-                        $monthlyDeviceByYear[$dy][$dtype] = array_fill(1, 12, null);
-                    }
-                    $monthlyDeviceByYear[$dy][$dtype][$dm] = (int)$dr['cnt'];
-                }
-            }
-        }
-
-        $interruptionMetricsPayload = [
-            'yoy'           => $cumulativeGangguanYoY,
-            'fault_current' => array_map('array_values', $monthlyFaultCurrentByYear),
-            'relay'         => array_map(fn($arr) => array_map('array_values', $arr), $monthlyRelayByYear),
-            'cause'         => array_map(fn($arr) => array_map('array_values', $arr), $monthlyCauseByYear),
-            'device'        => array_map(fn($arr) => array_map('array_values', $arr), $monthlyDeviceByYear ?? []),
-            'years'         => array_values($availableInterruptionYears),
-        ];
-
-        // Cause Breakdown ("Penyebab Sesuai Kode Gangguan") per year from official dictionary & canonical taxonomy
-        $canonicalCauseMap = [
-            'CAUSE_ANIMAL_CONTACT'              => ['category' => 'ANIMAL_CONTACT',          'label' => 'Sentuhan Binatang (Tikus/Burung/Bunglon/Ular)', 'badge' => 'warning'],
-            'CAUSE_VEGETATION_ROW'              => ['category' => 'VEGETATION_ROW',          'label' => 'Pohon / Ranting / Vegetasi (ROW)',              'badge' => 'success'],
-            'CAUSE_EQUIPMENT_FAILURE'           => ['category' => 'EQUIPMENT_FAILURE',       'label' => 'Kegagalan Komponen / Material Distribusi',      'badge' => 'danger'],
-            'CAUSE_THIRD_PARTY_OBJECT'          => ['category' => 'THIRD_PARTY_OBJECT',      'label' => 'Benda Asing / Aktivitas Pihak Ketiga (Layangan/Bangunan)', 'badge' => 'info'],
-            'CAUSE_LIGHTNING_SURGE'             => ['category' => 'LIGHTNING_WEATHER',       'label' => 'Sambaran Petir / Force Majeure Cuaca',          'badge' => 'primary'],
-            'CAUSE_CUSTOMER_IML_FAULT'          => ['category' => 'CUSTOMER_IML_FAULT',      'label' => 'Instalasi Milik Langganan (IML) / Overload',    'badge' => 'secondary'],
-            'CAUSE_CONDUCTOR_GSW_SNAP'          => ['category' => 'CONDUCTOR_GSW_SNAP',      'label' => 'Konduktor SUTM / Jumper / GSW Putus atau Lepas','badge' => 'danger'],
-            'CAUSE_CABLE_TERMINATION_FAULT'     => ['category' => 'CABLE_TERMINATION_FAULT', 'label' => 'Kegagalan Isolasi Kabel / Terminasi / Jointing','badge' => 'purple'],
-            'CAUSE_UNKNOWN_UNDER_INVESTIGATION' => ['category' => 'UNKNOWN_INVESTIGATION',   'label' => 'Belum Diketahui / Nihil Temuan Patroli',        'badge' => 'secondary'],
-            'CAUSE_UNMAPPED_ADVISORY'           => ['category' => 'UNMAPPED',                'label' => 'Belum Terpetakan (Unmapped Kode Sumber)',       'badge' => 'dark'],
-        ];
-        if ($db->tableExists('cause_code_dictionary')) {
-            $dictRows = $db->query("SELECT canonical_cause_code, MAX(cause_category) AS cat, MIN(cause_label) AS lbl FROM cause_code_dictionary WHERE is_active = 1 GROUP BY canonical_cause_code")->getResultArray();
-            foreach ($dictRows as $dr) {
-                $cCode = (string)$dr['canonical_cause_code'];
-                if (!isset($canonicalCauseMap[$cCode]) && $cCode !== '') {
-                    $canonicalCauseMap[$cCode] = [
-                        'category' => (string)$dr['cat'],
-                        'label'    => (string)$dr['lbl'],
-                        'badge'    => 'info',
-                    ];
-                }
-            }
-        }
-
-        $causeRawRows = $db->tableExists('historical_feeder_interruptions')
-            ? $db->query(
-                "SELECT YEAR(h.event_date) yr,
-                        COALESCE(NULLIF(TRIM(h.cause_canonical_code), ''), 'CAUSE_UNKNOWN_UNDER_INVESTIGATION') AS canonical_code,
-                        COALESCE(NULLIF(TRIM(h.cause_category), ''), 'UNKNOWN_INVESTIGATION') AS cause_category,
-                        COALESCE(NULLIF(TRIM(h.cause_mapping_status), ''), 'RESOLVED') AS mapping_status,
-                        GROUP_CONCAT(DISTINCT NULLIF(TRIM(h.cause_raw), '') ORDER BY h.cause_raw SEPARATOR ', ') AS raw_samples,
-                        COUNT(h.id) AS cnt
-                 FROM historical_feeder_interruptions h
-                 LEFT JOIN penyulang p ON UPPER(TRIM(p.nama_penyulang)) = UPPER(TRIM(h.feeder_name))
-                 WHERE h.event_date IS NOT NULL" . $ulpWhereClause . "
-                 GROUP BY YEAR(h.event_date), canonical_code, cause_category, mapping_status
-                 ORDER BY yr DESC, cnt DESC"
-            )->getResultArray()
-            : [];
-
-        $causeBreakdownByYear = [];
-        foreach ($availableTrendYears as $yr) {
-            $causeBreakdownByYear[(int)$yr] = [];
-        }
-        foreach ($causeRawRows as $cRow) {
-            $yr = (int)$cRow['yr'];
-            $code = (string)$cRow['canonical_code'];
-            $status = (string)$cRow['mapping_status'];
-            $cnt = (int)$cRow['cnt'];
-            $meta = $canonicalCauseMap[$code] ?? [
-                'category' => (string)$cRow['cause_category'],
-                'label'    => 'Kode Belum Terpetakan: ' . $code,
-                'badge'    => 'dark',
-            ];
-            $key = $code . '|' . $status;
-            if (!isset($causeBreakdownByYear[$yr][$key])) {
-                $causeBreakdownByYear[$yr][$key] = [
-                    'canonical_code' => $code,
-                    'category'       => $meta['category'],
-                    'label'          => $meta['label'],
-                    'badge'          => $meta['badge'],
-                    'mapping_status' => $status,
-                    'raw_samples'    => (string)($cRow['raw_samples'] ?? ''),
-                    'count'          => 0,
-                ];
-            }
-            $causeBreakdownByYear[$yr][$key]['count'] += $cnt;
-        }
-        foreach ($causeBreakdownByYear as $yr => $items) {
-            $list = array_values($items);
-            usort($list, fn($a, $b) => $b['count'] <=> $a['count']);
-            $totYr = (int)array_sum(array_column($list, 'count'));
-            foreach ($list as &$it) {
-                $it['count'] = (int)$it['count'];
-                $it['total'] = (int)$it['count'];
-                $it['pct']   = $totYr > 0 ? round(($it['count'] / $totYr) * 100, 1) : 0.0;
-            }
-            unset($it);
-            $hasSourceForYear = in_array((int)$yr, $availableInterruptionYears, true);
-            $causeBreakdownByYear[(int)$yr] = [
-                'year'         => (int)$yr,
-                'total_events' => $totYr,
-                'has_source'   => $hasSourceForYear,
-                'source_note'  => $hasSourceForYear
-                    ? null
-                    : 'Tahun ' . (int)$yr . ' tercatat pada data Temuan Inspeksi, namun belum ada impor histori trip di tabel Gangguan Penyulang.',
-                'items'        => $list,
-            ];
-        }
-
-        // Top 10 feeders by interruption count for trend year (via InterruptionModel for parity with /gangguan)
-        $topFeedersGangguanRows = $interruptionModel->getTop10ByYear((int)$trendYear, $ulpIdFilter, 10);
+        // Gangguan Kumulatif, Multi-Metrik, Top 10 & Penyebab are computed in
+        // GangguanAnalyticsService::getDashboardSyncPayload() above (100% parity with /gangguan).
 
         // Top 10 feeders by active inspection findings with pelaksana breakdown
         $temuanByPenyulangRaw = $db->query(
@@ -1375,12 +1091,17 @@ class Dashboard extends BaseController
             'prefersCollapsed'      => $prefersCollapsed,
             'networkData'           => $networkData,
             'assetSummary'          => $assetSummary,
+            'gangguanSyncStatus'         => $gangguanSyncStatus,
+            'gangguanYearA'              => $gangguanCtx['year_a'],
+            'gangguanYearB'              => $gangguanCtx['year_b'],
             'availableInterruptionYears' => $availableInterruptionYears,
             'cumulativeGangguan'         => $cumulativeGangguan,
             'cumulativeGangguanYoY'      => $cumulativeGangguanYoY,
             'interruptionMetricsPayload' => $interruptionMetricsPayload,
             'causeBreakdownByYear'       => $causeBreakdownByYear,
-            'topFeedersGangguan'    => $topFeedersGangguanRows,
+            'topFeedersGangguan'         => $topFeedersGangguanRows,
+            'topFeedersGangguanByYear'   => $topFeedersGangguanByYear,
+            'canManageGangguan'          => check_role(['administrator', 'admin', 'admin_pusat', 'admin_ulp', 'supervisor_up3', 'supervisor_ulp', 'inspeksi']),
             'topInspeksiPenyulang'  => $topInspeksiPenyulang,
             'emergencyFindings'     => $emergencyFindings,
             'temuanMaterialMatrix'  => $temuanMaterialMatrix,

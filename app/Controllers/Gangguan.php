@@ -5,6 +5,8 @@ namespace App\Controllers;
 use App\Models\InterruptionModel;
 use App\Repositories\PenyulangRepository;
 use App\Repositories\UlpRepository;
+use App\Services\GangguanAnalyticsService;
+use App\Services\GoogleSheetsGangguanSyncService;
 use App\Services\InterruptionExcelService;
 
 class Gangguan extends BaseController
@@ -12,162 +14,97 @@ class Gangguan extends BaseController
     private InterruptionModel $interruptionModel;
     private UlpRepository $ulpRepository;
     private PenyulangRepository $penyulangRepository;
+    private GoogleSheetsGangguanSyncService $syncService;
+    private GangguanAnalyticsService $analyticsService;
 
     public function __construct()
     {
-        $this->interruptionModel = new InterruptionModel();
-        $this->ulpRepository = new UlpRepository();
+        $this->interruptionModel   = new InterruptionModel();
+        $this->ulpRepository       = new UlpRepository();
         $this->penyulangRepository = new PenyulangRepository();
+        $this->syncService         = new GoogleSheetsGangguanSyncService();
+        $this->analyticsService    = new GangguanAnalyticsService();
     }
 
     public function index()
     {
-        $session    = session();
-        $role       = strtolower((string)$session->get('user_role'));
-        $userUlpId  = $session->get('user_ulp_id');
+        $session   = session();
+        $role      = strtolower((string)$session->get('user_role'));
+        $userUlpId = $session->get('user_ulp_id') ? (int)$session->get('user_ulp_id') : null;
+        $canManage = check_role(['administrator', 'admin', 'admin_pusat', 'admin_ulp', 'supervisor_up3', 'supervisor_ulp', 'inspeksi']);
 
-        // ─── Role-based ULP scope ───────────────────────────────────────────
-        $ulpIdFilter = null;
-        if (!in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3']) && !empty($userUlpId)) {
-            $ulpIdFilter = (int)$userUlpId;
-        }
-        $urlUlpId = $this->request->getGet('ulp_id');
-        if ($urlUlpId && in_array($role, ['administrator', 'admin', 'admin_pusat', 'supervisor_up3'])) {
-            $ulpIdFilter = (int)$urlUlpId;
-        }
+        // Synchronize from Google Sheets (TTL-cached auto-sync, or explicit refresh when permitted)
+        $forceRefresh = $canManage && ((string)$this->request->getGet('refresh_sync') === '1');
+        $syncStatus   = $this->syncService->ensureSynced($forceRefresh);
 
-        // ─── Available years from DB (no hardcode) ──────────────────────────
-        $availableYears = $this->interruptionModel->getAvailableYears();
-        if (empty($availableYears)) {
-            $availableYears = [(int)date('Y'), (int)date('Y') - 1];
-        }
-        $latestYear = $availableYears[0] ?? (int)date('Y');
+        // Unified context resolution shared with Dashboard Utama
+        $ctx = $this->analyticsService->resolveContext($this->request->getGet(), $role, $userUlpId);
+        $yearA          = $ctx['year_a'];
+        $yearB          = $ctx['year_b'];
+        $availableYears = $ctx['available_years'];
+        $ulpIdFilter    = $ctx['ulp_id'];
+        $penyulangId    = $ctx['penyulang_id'];
+        $scope          = $ctx['scope'];
 
-        // ─── Year A / Year B (analytics selectors) ─────────────────────────
-        $yearA = $this->request->getGet('year_a') ? (int)$this->request->getGet('year_a') : $latestYear;
-        $yearB = $this->request->getGet('year_b') ? (int)$this->request->getGet('year_b') : ($yearA - 1);
-        // Make sure they are within available set (fallback gracefully)
-        if (!in_array($yearA, $availableYears)) $yearA = $latestYear;
-        if (!in_array($yearB, $availableYears) && count($availableYears) > 1) $yearB = $availableYears[1];
+        // All 12 Pareto & reliability analytics items computed from unified dataset
+        $analytics12 = $this->analyticsService->getGangguanAnalytics12Items($ctx);
+        $yoyInfo     = $analytics12['total_gangguan']['yoy'];
+        $periodInfo  = [
+            'yearA_period'      => $yoyInfo['yearA_period'],
+            'yearB_period'      => $yoyInfo['yearB_period'],
+            'comparable_months' => $yoyInfo['comparable_months'],
+            'comparable_period' => $yoyInfo['comparable_period'],
+        ];
 
-        $penyulangId = $this->request->getGet('penyulang_id') ? (int)$this->request->getGet('penyulang_id') : null;
+        $totalA    = (int)$yoyInfo['comparable_total_a'];
+        $totalB    = (int)$yoyInfo['comparable_total_b'];
+        $selisih   = (int)$yoyInfo['comparable_diff'];
+        $pctChange = $yoyInfo['comparable_pct'];
 
-        // ─── Analytics: Monthly breakdown per year ──────────────────────────
-        $monthlyA = $this->interruptionModel->getMonthlyByYear($yearA, $ulpIdFilter, $penyulangId);
-        $monthlyB = $this->interruptionModel->getMonthlyByYear($yearB, $ulpIdFilter, $penyulangId);
-
-        // ─── Analytics: Comparable period description ───────────────────────
-        $periodInfo       = $this->interruptionModel->getComparablePeriod($yearA, $yearB, $ulpIdFilter, $penyulangId);
-        $comparableMonths = $periodInfo['comparable_months'];
-
-        $totalA = $this->interruptionModel->getTotalByYearUpToMonth($yearA, $comparableMonths, $ulpIdFilter, $penyulangId);
-        $totalB = $this->interruptionModel->getTotalByYearUpToMonth($yearB, $comparableMonths, $ulpIdFilter, $penyulangId);
-        $selisih = $totalA - $totalB;
-        $pctChange = ($totalB > 0) ? round(($selisih / $totalB) * 100, 1) : null;
-
-        // ─── Analytics: Top 10 penyulang ────────────────────────────────────
-        $top10A = $this->interruptionModel->getTop10ByYear($yearA, $ulpIdFilter, 10);
-        $top10B = $this->interruptionModel->getTop10ByYear($yearB, $ulpIdFilter, 10);
-
-        // Build indexed lookup for yearB by penyulang_id for easy join
-        $top10BIdx = [];
-        foreach ($top10B as $row) {
-            if ($row['penyulang_id']) $top10BIdx[(int)$row['penyulang_id']] = (int)$row['cnt'];
-        }
-
-        // Merge: use yearA list as base, append yearB-only entries
-        $top10Merged = [];
-        foreach ($top10A as $row) {
-            $pid  = (int)$row['penyulang_id'];
-            $cntB = $top10BIdx[$pid] ?? 0;
-            $top10Merged[] = [
-                'penyulang_id'   => $pid,
-                'nama_penyulang' => $row['nama_penyulang'],
-                'nama_ulp'       => $row['nama_ulp'],
-                'cnt_a'          => (int)$row['cnt'],
-                'cnt_b'          => $cntB,
-                'selisih'        => (int)$row['cnt'] - $cntB,
-            ];
-            unset($top10BIdx[$pid]);
-        }
-
-        // ─── List / filter (existing table view) ───────────────────────────
-        $yearFilter   = $this->request->getGet('year') ? (int)$this->request->getGet('year') : null;
+        // ─── Detailed Event Table Filtering (uses same scoped dataset) ─────
+        $yearFilter     = $this->request->getGet('year') ? (int)$this->request->getGet('year') : null;
         $categoryFilter = $this->request->getGet('category') ? strtoupper(trim((string)$this->request->getGet('category'))) : null;
-        $search       = trim((string)$this->request->getGet('search'));
+        $search         = trim((string)$this->request->getGet('search'));
 
-        $hasUlpId       = $this->interruptionModel->hasColumn('ulp_id');
-        $hasPenyulangId = $this->interruptionModel->hasColumn('penyulang_id');
-
-        $builder = $this->interruptionModel->builder();
-        if ($hasUlpId && $hasPenyulangId) {
-            $builder->select('historical_feeder_interruptions.*, ulps.nama_ulp as master_ulp, penyulang.nama_penyulang as master_penyulang')
-                ->join('ulps', 'ulps.id = historical_feeder_interruptions.ulp_id', 'left')
-                ->join('penyulang', 'penyulang.id = historical_feeder_interruptions.penyulang_id', 'left');
-        } else {
-            $builder->select('historical_feeder_interruptions.*, historical_feeder_interruptions.ulp_name as master_ulp, historical_feeder_interruptions.feeder_name as master_penyulang');
-        }
-
-        if ($ulpIdFilter !== null) {
-            if ($hasUlpId) {
-                $builder->where('historical_feeder_interruptions.ulp_id', $ulpIdFilter);
-            } else {
-                $uRow = $this->ulpRepository->find($ulpIdFilter);
-                if ($uRow) {
-                    $cleanU = trim(str_ireplace('ULP', '', (string)$uRow['nama_ulp']));
-                    $builder->like('historical_feeder_interruptions.ulp_name', $cleanU);
+        $allRows = array_values(array_filter($analytics12['filtered_rows'], static function (array $r) use ($yearFilter, $categoryFilter, $search): bool {
+            if ($yearFilter !== null && $yearFilter > 0 && (int)$r['year'] !== $yearFilter) {
+                return false;
+            }
+            if ($categoryFilter && strtoupper((string)$r['interruption_category']) !== $categoryFilter) {
+                return false;
+            }
+            if ($search !== '') {
+                $haystack = strtolower(
+                    ($r['feeder_name'] ?? '') . ' ' .
+                    ($r['field_narrative_raw'] ?? '') . ' ' .
+                    ($r['device_name'] ?? '') . ' ' .
+                    ($r['relay_trip_type'] ?? '') . ' ' .
+                    ($r['cause_raw'] ?? '')
+                );
+                if (!str_contains($haystack, strtolower($search))) {
+                    return false;
                 }
             }
-        }
-        if ($penyulangId !== null && $penyulangId > 0) {
-            if ($hasPenyulangId) {
-                $builder->where('historical_feeder_interruptions.penyulang_id', $penyulangId);
-            } else {
-                $dbTmp = \Config\Database::connect();
-                $pRow = $dbTmp->table('penyulang')->select('nama_penyulang')->where('id', $penyulangId)->get()->getRowArray();
-                if ($pRow) {
-                    $builder->where('historical_feeder_interruptions.feeder_name', $pRow['nama_penyulang']);
-                }
-            }
-        }
-        if ($yearFilter !== null && $yearFilter > 0) {
-            $builder->where('YEAR(historical_feeder_interruptions.event_date)', $yearFilter);
-        }
-        if ($categoryFilter) {
-            $builder->where('historical_feeder_interruptions.interruption_category', $categoryFilter);
-        }
-        if ($search !== '') {
-            $builder->groupStart()
-                ->like('historical_feeder_interruptions.feeder_name', $search)
-                ->orLike('historical_feeder_interruptions.field_narrative_raw', $search)
-                ->orLike('historical_feeder_interruptions.device_name', $search)
-                ->orLike('historical_feeder_interruptions.relay_trip_type', $search)
-                ->groupEnd();
-        }
+            return true;
+        }));
 
-        $builder->orderBy('historical_feeder_interruptions.event_date', 'DESC')
-                ->orderBy('historical_feeder_interruptions.interruption_started_at', 'DESC');
-
-        $statsBuilder = clone $builder;
-        $allRows  = $statsBuilder->get()->getResultArray();
         $totalCount = count($allRows);
-        $totalKwh = 0; $dgrCount = 0; $ocrCount = 0; $tempCount = 0; $permCount = 0;
+        $totalKwh = 0.0; $dgrCount = 0; $ocrCount = 0; $tempCount = 0; $permCount = 0;
         foreach ($allRows as $r) {
             $totalKwh += (float)($r['energy_not_supplied_kwh'] ?? 0);
             $relay = strtoupper((string)($r['relay_trip_type'] ?? ''));
             if (str_contains($relay, 'DGR')) $dgrCount++;
             if (str_contains($relay, 'OCR')) $ocrCount++;
-            $cat = strtoupper((string)($r['interruption_category'] ?? ''));
-            if ($cat === 'PERMANENT') $permCount++;
+            if (($r['interruption_category'] ?? '') === 'PERMANENT') $permCount++;
             else $tempCount++;
         }
 
-        $page = max(1, (int)$this->request->getGet('page'));
-        $perPage = 25;
+        $page          = max(1, (int)$this->request->getGet('page'));
+        $perPage       = 25;
         $totalFiltered = $totalCount;
-        $totalPages = max(1, (int)ceil($totalFiltered / $perPage));
-        $offset = ($page - 1) * $perPage;
-        $items  = array_slice($allRows, $offset, $perPage);
+        $totalPages    = max(1, (int)ceil($totalFiltered / $perPage));
+        $offset        = ($page - 1) * $perPage;
+        $items         = array_slice($allRows, $offset, $perPage);
 
         $ulps = $this->ulpRepository->getActiveUlps();
         if ($ulpIdFilter) {
@@ -177,21 +114,24 @@ class Gangguan extends BaseController
             $penyulangs = $db->table('penyulang')->select('id, nama_penyulang, ulp_id')->orderBy('nama_penyulang', 'ASC')->get()->getResultArray();
         }
 
-        $canManage = check_role(['administrator', 'admin', 'admin_ulp', 'supervisor_up3', 'supervisor_ulp', 'inspeksi']);
-
         return view('gangguan/index', [
-            // ── Analytics
+            // ── Sync & Context
+            'syncStatus'     => $syncStatus,
+            'ctx'            => $ctx,
+            'scope'          => $scope,
+            'analytics12'    => $analytics12,
+            // ── Analytics (kept compatible)
             'yearA'          => $yearA,
             'yearB'          => $yearB,
             'availableYears' => $availableYears,
-            'monthlyA'       => array_values($monthlyA),  // 0-indexed for JS
-            'monthlyB'       => array_values($monthlyB),
+            'monthlyA'       => $analytics12['total_gangguan']['monthly_a'],
+            'monthlyB'       => $analytics12['total_gangguan']['monthly_b'],
             'periodInfo'     => $periodInfo,
             'totalA'         => $totalA,
             'totalB'         => $totalB,
             'selisih'        => $selisih,
             'pctChange'      => $pctChange,
-            'top10Merged'    => $top10Merged,
+            'top10Merged'    => $analytics12['top_10_penyulang']['rows'],
             // ── List / filter
             'items'          => $items,
             'totalCount'     => $totalCount,
@@ -213,6 +153,48 @@ class Gangguan extends BaseController
             'penyulangs'     => $penyulangs,
             'canManage'      => $canManage,
         ]);
+    }
+
+    public function syncSheets()
+    {
+        $canManage = check_role(['administrator', 'admin', 'admin_pusat', 'admin_ulp', 'supervisor_up3', 'supervisor_ulp', 'inspeksi']);
+        if (!$canManage) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => 'error', 'message' => 'Akses ditolak.'])->setStatusCode(403);
+            }
+            return redirect()->to(site_url('gangguan'))->with('error', 'Anda tidak memiliki hak akses untuk sinkronisasi Google Sheets.');
+        }
+
+        $syncStatus = $this->syncService->ensureSynced(true);
+
+        if ($this->request->isAJAX()) {
+            $ok = ($syncStatus['status'] ?? '') === 'SYNCED';
+            return $this->response->setJSON([
+                'status'         => $ok ? 'success' : 'error',
+                'message'        => $ok
+                    ? sprintf('Sinkronisasi Google Sheets selesai (%d kejadian terbaca).', (int)($syncStatus['row_count'] ?? 0))
+                    : ($syncStatus['last_error'] ?? 'Sinkronisasi gagal.'),
+                'row_count'      => (int)($syncStatus['row_count'] ?? 0),
+                'last_synced_at' => $syncStatus['last_synced_at'] ?? null,
+                'changed'        => (bool)($syncStatus['changed'] ?? false),
+            ])->setStatusCode($ok ? 200 : 502);
+        }
+
+        $redirectTo = trim((string)$this->request->getPost('redirect_to'));
+        $targetPath = str_starts_with($redirectTo, 'dashboard') ? 'dashboard' : 'gangguan';
+        $queryStr   = trim((string)$this->request->getPost('redirect_query'));
+        $targetUrl  = site_url($targetPath) . ($queryStr !== '' ? '?' . ltrim($queryStr, '?') : '');
+
+        if (($syncStatus['status'] ?? '') === 'SYNCED') {
+            $msg = sprintf(
+                'Data gangguan berhasil diperbarui dari %s (%d baris kejadian).',
+                $syncStatus['source_label'] ?? 'Google Sheets',
+                (int)($syncStatus['row_count'] ?? 0)
+            );
+            return redirect()->to($targetUrl)->with('success', $msg);
+        }
+
+        return redirect()->to($targetUrl)->with('error', 'Gagal memperbarui dari Google Sheets: ' . ($syncStatus['last_error'] ?? 'kesalahan tidak diketahui'));
     }
 
 

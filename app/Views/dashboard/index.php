@@ -1746,27 +1746,43 @@
                         <h6 class="fw-bold mb-0 text-dark" style="font-size: 13.5px;">Gangguan Kumulatif &amp; Analisis Metrik Keandalan</h6>
                         <small class="text-muted" style="font-size: 11px;">
                             Perbandingan tepat 2 tahun pilihan pengguna &bull; Sumber data dan filter terintegrasi langsung dengan <a href="<?= site_url('gangguan') ?>" class="text-decoration-none fw-semibold">/gangguan</a>
+                            <?php if (!empty($gangguanSyncStatus['last_synced_at'])): ?>
+                                &bull; <span class="text-success fw-semibold"><i class="fas fa-sync me-1"></i>Sinkron Sheets: <?= esc($gangguanSyncStatus['last_synced_at']) ?></span>
+                            <?php endif; ?>
                         </small>
                     </div>
                 </div>
 
-                <!-- Year Pair Comparison Selector -->
-                <div class="d-flex align-items-center gap-1.5 bg-light p-1 rounded-pill border">
-                    <span class="text-muted small fw-bold ps-2" style="font-size: 11px;"><i class="fas fa-calendar-alt me-1"></i>Bandingkan:</span>
-                    <select id="yoyYearA" class="form-select form-select-sm py-0 px-2 rounded-pill font-monospace fw-bold text-danger border-danger-subtle" style="font-size: 11px; width: auto; height: 26px;" onchange="updateYoYComparisonChart()">
-                        <?php foreach (($availableTrendYears ?? [date('Y')]) as $yrOpt): ?>
-                            <option value="<?= $yrOpt ?>" <?= (int)$yrOpt === (int)($trendYear ?? date('Y')) ? 'selected' : '' ?>><?= $yrOpt ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                    <span class="text-muted small fw-bold px-0.5">vs</span>
-                    <select id="yoyYearB" class="form-select form-select-sm py-0 px-2 rounded-pill font-monospace fw-bold text-primary border-primary-subtle" style="font-size: 11px; width: auto; height: 26px;" onchange="updateYoYComparisonChart()">
-                        <?php 
-                            $prevYearDef = (int)($gangguanStats['last_year'] ?? (($trendYear ?? date('Y')) - 1));
-                            foreach (($availableTrendYears ?? [date('Y') - 1]) as $yrOpt): 
+                <!-- Year Pair Comparison Selector & Manual Google Sheets Sync -->
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-1.5 bg-light p-1 rounded-pill border">
+                        <span class="text-muted small fw-bold ps-2" style="font-size: 11px;"><i class="fas fa-calendar-alt me-1"></i>Bandingkan:</span>
+                        <?php
+                            $defYrA = (int)($gangguanYearA ?? $gangguanStats['year'] ?? $trendYear ?? date('Y'));
+                            $defYrB = (int)($gangguanYearB ?? $gangguanStats['last_year'] ?? ($defYrA - 1));
                         ?>
-                            <option value="<?= $yrOpt ?>" <?= (int)$yrOpt === $prevYearDef ? 'selected' : '' ?>><?= $yrOpt ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                        <select id="yoyYearA" class="form-select form-select-sm py-0 px-2 rounded-pill font-monospace fw-bold text-danger border-danger-subtle" style="font-size: 11px; width: auto; height: 26px;" onchange="onDashboardGangguanYearPairChange()">
+                            <?php foreach (($availableTrendYears ?? [date('Y')]) as $yrOpt): ?>
+                                <option value="<?= $yrOpt ?>" <?= (int)$yrOpt === $defYrA ? 'selected' : '' ?>><?= $yrOpt ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <span class="text-muted small fw-bold px-0.5">vs</span>
+                        <select id="yoyYearB" class="form-select form-select-sm py-0 px-2 rounded-pill font-monospace fw-bold text-primary border-primary-subtle" style="font-size: 11px; width: auto; height: 26px;" onchange="onDashboardGangguanYearPairChange()">
+                            <?php foreach (($availableTrendYears ?? [date('Y') - 1]) as $yrOpt): ?>
+                                <option value="<?= $yrOpt ?>" <?= (int)$yrOpt === $defYrB ? 'selected' : '' ?>><?= $yrOpt ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <?php if (!empty($canManageGangguan)): ?>
+                    <form method="POST" action="<?= site_url('gangguan/sync-sheets') ?>" class="d-inline m-0">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="redirect_to" value="dashboard">
+                        <input type="hidden" name="redirect_query" value="year_a=<?= $defYrA ?>&year_b=<?= $defYrB ?><?= !empty($selectedUlpId) ? '&ulp_id=' . (int)$selectedUlpId : '' ?>">
+                        <button type="submit" class="btn btn-xs btn-outline-success rounded-pill px-2.5 py-1 fw-semibold" style="font-size: 11px;" title="Perbarui data gangguan langsung dari Google Sheets">
+                            <i class="fas fa-rotate me-1"></i>Sinkronkan Sheets
+                        </button>
+                    </form>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -1806,7 +1822,13 @@
                 </div>
             </div>
         </div>
-        <div class="card-body p-2.5 d-flex align-items-center justify-content-center">
+        <div class="card-body p-2.5 d-flex flex-column align-items-center justify-content-center">
+            <?php if (($gangguanSyncStatus['status'] ?? '') === 'ERROR' && !empty($gangguanSyncStatus['last_error'])): ?>
+            <div class="alert alert-warning w-100 py-1.5 px-3 mb-2 rounded-3 small d-flex align-items-center gap-2" style="font-size: 11px;">
+                <i class="fas fa-triangle-exclamation flex-shrink-0"></i>
+                <div>Pembaruan Google Sheets gagal (<?= esc($gangguanSyncStatus['last_error']) ?>). Menampilkan data tersimpan terakhir<?= !empty($gangguanSyncStatus['last_synced_at']) ? ' pada ' . esc($gangguanSyncStatus['last_synced_at']) : '' ?>.</div>
+            </div>
+            <?php endif; ?>
             <div class="dah-cum-chart-box w-100 position-relative" id="cumulativeChartContainer" style="min-height: 250px;">
                 <canvas id="cumulativeGangguanChart"></canvas>
                 <div id="chartNoDataOverlay" class="d-none position-absolute top-50 start-50 translate-middle text-center p-3 bg-white bg-opacity-75 rounded border shadow-sm">
@@ -1827,12 +1849,12 @@
                         <span class="badge bg-danger-subtle text-danger p-2 rounded-2"><i class="fas fa-bolt"></i></span>
                         <div>
                             <h6 class="fw-bold mb-0 text-dark" style="font-size: 13px;">Penyulang Gangguan Terbanyak</h6>
-                            <small class="text-muted" style="font-size: 11px;">Peringkat frekuensi trip tahun <?= (int)($trendYear ?? date('Y')) ?> (Sumber: Rekap Gangguan)</small>
+                            <small class="text-muted" style="font-size: 11px;">Peringkat frekuensi trip tahun <span id="topFeedersYearLabel"><?= (int)($trendYear ?? date('Y')) ?></span> (Sumber: Rekap Gangguan)</small>
                         </div>
                     </div>
                     <div class="d-flex align-items-center gap-1.5">
                         <label for="trendYearSelectGangguan" class="small text-muted fw-semibold mb-0" style="font-size: 11px;">Tahun:</label>
-                        <select id="trendYearSelectGangguan" class="form-select form-select-sm rounded-pill font-monospace" style="font-size: 11px; width: auto; padding: 2px 24px 2px 10px;" onchange="changeTrendYear(this.value)">
+                        <select id="trendYearSelectGangguan" class="form-select form-select-sm rounded-pill font-monospace" style="font-size: 11px; width: auto; padding: 2px 24px 2px 10px;" onchange="renderTopFeedersGangguanByYear(this.value)">
                             <?php foreach ($availableTrendYears ?? [date('Y')] as $yr): ?>
                                 <option value="<?= $yr ?>" <?= ((int)($trendYear ?? date('Y')) === (int)$yr) ? 'selected' : '' ?>>
                                     <?= $yr ?>
@@ -1852,7 +1874,7 @@
                                     <th class="text-end" style="width: 110px;">Total Gangguan</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="topFeedersGangguanTableBody">
                                 <?php foreach (($topFeedersGangguan ?? []) as $rank => $row): ?>
                                 <tr>
                                     <td class="text-center text-muted fw-bold"><?= $rank + 1 ?></td>
@@ -1864,7 +1886,7 @@
                                 <?php if (empty($topFeedersGangguan)): ?>
                                 <tr>
                                     <td colspan="4" class="text-center text-muted py-3 small">Tidak ada data gangguan untuk tahun <?= (int)($trendYear ?? date('Y')) ?>.</td>
-                                                                </tr>
+                                </tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>
@@ -2783,6 +2805,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.changeTrendYear = function(newYear) {
         var url = new URL(window.location.href);
         url.searchParams.set('trend_year', newYear);
+        url.searchParams.set('year_a', newYear);
         window.location.href = url.toString();
     };
 
@@ -3154,8 +3177,50 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 6. Cumulative Gangguan 2-Year YoY Comparison & Zero-Reload Multi-Metric Line Chart
     window.yoyPayload = <?= json_encode($interruptionMetricsPayload ?? [], JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) ?>;
+    window.topFeedersGangguanByYear = <?= json_encode($topFeedersGangguanByYear ?? [], JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) ?>;
     window.currentYoYMetric = 'trips';
     window.yoyChartInstance = null;
+
+    window.renderTopFeedersGangguanByYear = function(year) {
+        var yr = String(year || '');
+        var rows = (window.topFeedersGangguanByYear && Array.isArray(window.topFeedersGangguanByYear[yr]))
+            ? window.topFeedersGangguanByYear[yr]
+            : [];
+        var lbl = document.getElementById('topFeedersYearLabel');
+        var sel = document.getElementById('trendYearSelectGangguan');
+        var tbody = document.getElementById('topFeedersGangguanTableBody');
+        if (lbl) lbl.textContent = yr;
+        if (sel && sel.value !== yr) sel.value = yr;
+        if (!tbody) return;
+
+        if (!rows.length) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3 small">Tidak ada data gangguan untuk tahun ' + escHtml(yr) + '.</td></tr>';
+            return;
+        }
+        var html = '';
+        rows.forEach(function(row, rank) {
+            html += '<tr>' +
+                '<td class="text-center text-muted fw-bold">' + (rank + 1) + '</td>' +
+                '<td class="fw-semibold text-dark">' + escHtml(row.nama_penyulang || row.feeder_name || '-') + '</td>' +
+                '<td class="text-muted small">' + escHtml(row.nama_ulp || '-') + '</td>' +
+                '<td class="text-end fw-bold text-danger font-monospace">' + Number(row.cnt || 0).toLocaleString('id-ID') + '</td>' +
+            '</tr>';
+        });
+        tbody.innerHTML = html;
+    };
+
+    window.onDashboardGangguanYearPairChange = function() {
+        window.updateYoYComparisonChart();
+        var selA = document.getElementById('yoyYearA');
+        if (selA && selA.value) {
+            window.renderTopFeedersGangguanByYear(selA.value);
+            var causeSel = document.getElementById('causeYearSelect');
+            if (causeSel) {
+                causeSel.value = selA.value;
+                window.renderCauseBreakdownByYear(selA.value);
+            }
+        }
+    };
 
     window.switchYoYMetric = function(metric, btn) {
         window.currentYoYMetric = metric;
@@ -3320,7 +3385,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var relayMap = (window.yoyPayload && window.yoyPayload.relay) ? window.yoyPayload.relay : {};
             var relaysA = relayMap[yrA] || {};
             var relaysB = relayMap[yrB] || {};
-            var allRelayTypes = Object.keys(Object.assign({}, relaysA, relaysB)).filter(function(k) { return k !== 'TIDAK_TERCATAT' && k !== ''; });
+            var allRelayTypes = Object.keys(Object.assign({}, relaysA, relaysB)).filter(function(k) { return k !== ''; });
 
             var totalA = 0;
             var totalB = 0;
